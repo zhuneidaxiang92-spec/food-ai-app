@@ -9,7 +9,7 @@ import {
   Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Swipeable } from "react-native-gesture-handler";
+import { Swipeable, GestureHandlerRootView } from "react-native-gesture-handler";
 import LottieView from "lottie-react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -18,18 +18,20 @@ import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../context/ThemeContext";
 import { Colors } from "../constants/colors";
 import { useTextSize } from "../context/TextSizeContext";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function HistoryScreen() {
-  const navigation = useNavigation();
-  const [history, setHistory] = useState([]);
+  const navigation = useNavigation<any>();
+  const [history, setHistory] = useState<any[]>([]);
 
   const { isDark } = useTheme();
   const theme = isDark ? Colors.dark : Colors.light;
 
   const { fontSize } = useTextSize(); // ← TEXT SIZE
+  const { t } = useLanguage();
 
   const loadHistory = async () => {
-    const stored = JSON.parse(await AsyncStorage.getItem("history")) || [];
+    const stored = JSON.parse((await AsyncStorage.getItem("history")) || "[]");
     setHistory(stored);
   };
 
@@ -45,10 +47,10 @@ export default function HistoryScreen() {
   };
 
   const clearHistory = () => {
-    Alert.alert("履歴を削除", "全ての履歴を削除しますか？", [
-      { text: "キャンセル", style: "cancel" },
+    Alert.alert(t("hist_clear_title"), t("hist_clear_msg"), [
+      { text: t("hist_clear_cancel"), style: "cancel" },
       {
-        text: "削除",
+        text: t("hist_clear_delete"),
         style: "destructive",
         onPress: async () => {
           await AsyncStorage.removeItem("history");
@@ -68,102 +70,105 @@ export default function HistoryScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* HEADER */}
-      <View style={styles.headerRow}>
-        <Text style={[styles.title, { color: theme.text, fontSize: fontSize + 4 }]}>
-          履歴
-        </Text>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        {/* HEADER */}
+        <View style={styles.headerRow}>
+          <Text style={[styles.title, { color: theme.text, fontSize: fontSize + 4 }]}>
+            {t("hist_title")}
+          </Text>
 
-        {history.length > 0 && (
-          <TouchableOpacity onPress={clearHistory}>
-            <Ionicons name="trash-outline" size={28} color="red" />
-          </TouchableOpacity>
+          {history.length > 0 && (
+            <TouchableOpacity onPress={clearHistory}>
+              <Ionicons name="trash-outline" size={28} color="red" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* EMPTY STATE */}
+        {history.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <LottieView
+              autoPlay
+              loop
+              style={{ width: 180, height: 180 }}
+              source={require("../assets/empty.json")}
+            />
+            <Text style={[styles.empty, { color: isDark ? "#bbb" : "#777", fontSize }]}>
+              {t("hist_empty")}
+            </Text>
+          </View>
+        ) : (
+          <ScrollView>
+            {history.map((item, idx) => (
+              <Swipeable
+                key={idx}
+                renderRightActions={() => renderRightActions(item.name)}
+              >
+                <View
+                  style={[
+                    styles.card,
+                    { backgroundColor: theme.card, borderColor: theme.border },
+                  ]}
+                >
+                  {/* Thumbnail */}
+                  {item.image ? (
+                    <Image source={{ uri: item.image }} style={styles.thumb} />
+                  ) : (
+                    <View
+                      style={[
+                        styles.thumb,
+                        styles.placeholder,
+                        { backgroundColor: isDark ? "#333" : "#eee" },
+                      ]}
+                    >
+                      <Text style={{ color: theme.text, fontSize }}>🍽️</Text>
+                    </View>
+                  )}
+
+                  {/* Info */}
+                  <View style={styles.info}>
+                    <Text
+                      style={[
+                        styles.date,
+                        { color: isDark ? "#aaa" : "#777", fontSize: fontSize - 2 },
+                      ]}
+                    >
+                      {item.date}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.name,
+                        { color: theme.text, fontSize: fontSize + 1 },
+                      ]}
+                    >
+                      {item.name}
+                    </Text>
+                  </View>
+
+                  {/* Detail Button */}
+                  <LinearGradient
+                    colors={["#FF7F50", "#FF6347"]}
+                    style={styles.detailBtn}
+                  >
+                    <TouchableOpacity
+                      onPress={() =>
+                        navigation.navigate("Recipe", {
+                          recipe: item.recipe || null, // ✅ Pass cached recipe if available
+                          recipeName: item.name_en || item.name, // Fallback
+                        })
+                      }
+                    >
+                      <Ionicons name="arrow-forward" size={22} color="#fff" />
+                    </TouchableOpacity>
+                  </LinearGradient>
+                </View>
+              </Swipeable>
+            ))}
+          </ScrollView>
         )}
       </View>
-
-      {/* EMPTY STATE */}
-      {history.length === 0 ? (
-        <View style={styles.emptyBox}>
-          <LottieView
-            autoPlay
-            loop
-            style={{ width: 180, height: 180 }}
-            source={require("../assets/empty.json")}
-          />
-          <Text style={[styles.empty, { color: isDark ? "#bbb" : "#777", fontSize }]}>
-            まだ履歴がありません
-          </Text>
-        </View>
-      ) : (
-        <ScrollView>
-          {history.map((item, idx) => (
-            <Swipeable
-              key={idx}
-              renderRightActions={() => renderRightActions(item.name)}
-            >
-              <View
-                style={[
-                  styles.card,
-                  { backgroundColor: theme.card, borderColor: theme.border },
-                ]}
-              >
-                {/* Thumbnail */}
-                {item.image ? (
-                  <Image source={{ uri: item.image }} style={styles.thumb} />
-                ) : (
-                  <View
-                    style={[
-                      styles.thumb,
-                      styles.placeholder,
-                      { backgroundColor: isDark ? "#333" : "#eee" },
-                    ]}
-                  >
-                    <Text style={{ color: theme.text, fontSize }}>🍽️</Text>
-                  </View>
-                )}
-
-                {/* Info */}
-                <View style={styles.info}>
-                  <Text
-                    style={[
-                      styles.date,
-                      { color: isDark ? "#aaa" : "#777", fontSize: fontSize - 2 },
-                    ]}
-                  >
-                    {item.date}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.name,
-                      { color: theme.text, fontSize: fontSize + 1 },
-                    ]}
-                  >
-                    {item.name}
-                  </Text>
-                </View>
-
-                {/* Detail Button */}
-                <LinearGradient
-                  colors={["#FF7F50", "#FF6347"]}
-                  style={styles.detailBtn}
-                >
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate("Recipe", {
-                        recipeName: item.name,
-                      })
-                    }
-                  >
-                    <Ionicons name="arrow-forward" size={22} color="#fff" />
-                  </TouchableOpacity>
-                </LinearGradient>
-              </View>
-            </Swipeable>
-          ))}
-        </ScrollView>
-      )}
-    </View>
+    </GestureHandlerRootView>
   );
 }
 

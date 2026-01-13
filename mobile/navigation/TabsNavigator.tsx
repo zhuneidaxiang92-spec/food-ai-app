@@ -1,82 +1,56 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useTheme } from "../context/ThemeContext";
+import { useLanguage } from "../context/LanguageContext";
 
 import HomeScreen from "../app/home";
 import PreviewScreen from "../app/preview";
-import ResultScreen from "../app/result";
-import RecipeScreen from "../app/recipe";
+import FavoritesScreen from "../app/favorites";
+import HistoryScreen from "../app/history";
 import SettingsScreen from "../app/settings";
-
-import { useTheme } from "../context/ThemeContext";
-import { Colors } from "../constants/colors";
 
 const Tab = createBottomTabNavigator();
 
 export default function TabsNavigator() {
-  const { isDark } = useTheme();
-  const theme = isDark ? Colors.dark : Colors.light;
+    const { isDark } = useTheme();
+    const { t } = useLanguage();
 
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
+    return (
+        <Tab.Navigator
+            screenOptions={({ route }) => ({
+                headerShown: false,
+                tabBarActiveTintColor: isDark ? "#ffcc66" : "#ff9500",
+                tabBarInactiveTintColor: isDark ? "#aaa" : "gray",
+                tabBarStyle: {
+                    backgroundColor: isDark ? "#000" : "#fff",
+                    borderTopColor: isDark ? "#222" : "#ddd",
+                    height: 60,
+                    paddingBottom: 5,
+                },
+                tabBarLabelStyle: {
+                    fontSize: 10,
+                    marginBottom: 5,
+                    fontWeight: "600",
+                },
+                tabBarIcon: ({ color, focused }) => {
+                    let icon: any = "ellipse";
 
-        // Tab Bar Colors
-        tabBarActiveTintColor: "#FF7043",
-        tabBarInactiveTintColor: isDark ? "#bbbbbb" : "#777777",
+                    if (route.name === "Home") icon = focused ? "home" : "home-outline";
+                    else if (route.name === "Scan") icon = focused ? "camera" : "camera-outline";
+                    else if (route.name === "Favorites") icon = focused ? "heart" : "heart-outline";
+                    else if (route.name === "History") icon = focused ? "time" : "time-outline";
+                    else if (route.name === "Settings") icon = focused ? "settings" : "settings-outline";
 
-        // Tab Bar Background
-        tabBarStyle: {
-          backgroundColor: theme.card,
-          borderTopColor: theme.border,
-          height: 60,
-          paddingBottom: 5,
-        },
-
-        // Icons
-        tabBarIcon: ({ color, size }) => {
-          let iconName: any;
-
-          if (route.name === "Home") iconName = "home";
-          else if (route.name === "Scan") iconName = "camera";
-          else if (route.name === "Result") iconName = "analytics";
-          else if (route.name === "Recipe") iconName = "restaurant";
-          else if (route.name === "Settings") iconName = "settings";
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-      })}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{ tabBarLabel: "ホーム" }}
-      />
-
-      <Tab.Screen
-        name="Scan"
-        component={PreviewScreen}
-        options={{ tabBarLabel: "スキャン" }}
-      />
-
-      <Tab.Screen
-        name="Result"
-        component={ResultScreen}
-        options={{ tabBarLabel: "結果" }}
-      />
-
-      <Tab.Screen
-        name="Recipe"
-        component={RecipeScreen}
-        options={{ tabBarLabel: "レシピ" }}
-      />
-
-      <Tab.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{ tabBarLabel: "設定" }}
-      />
-    </Tab.Navigator>
-  );
+                    return <Ionicons name={icon} size={24} color={color} />;
+                },
+            })}
+        >
+            <Tab.Screen name="Home" component={HomeScreen} options={{ title: "ホーム" }} />
+            <Tab.Screen name="Scan" component={PreviewScreen} options={{ title: "スキャン" }} />
+            <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: "お気に入り" }} />
+            <Tab.Screen name="History" component={HistoryScreen} options={{ title: "履歴" }} />
+            <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: "設定" }} />
+        </Tab.Navigator>
+    );
 }

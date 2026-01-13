@@ -15,6 +15,10 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTheme } from "../context/ThemeContext";
 import { Colors } from "../constants/colors";
 import { useTextSize } from "../context/TextSizeContext";
+import { useLanguage } from "../context/LanguageContext";
+import GlobalWrapper from "../components/GlobalWrapper";
+import GlassCard from "../components/GlassCard";
+import AnimatedButton from "../components/AnimatedButton";
 
 import type { RootStackParamList } from "../App";
 
@@ -30,6 +34,7 @@ export default function ResultScreen() {
   const { isDark } = useTheme();
   const theme = isDark ? Colors.dark : Colors.light;
   const { fontSize } = useTextSize();
+  const { t } = useLanguage();
 
   console.log("📌 RESULT =", result);
 
@@ -45,7 +50,7 @@ export default function ResultScreen() {
         ]}
       >
         <Text style={[styles.error, { color: theme.text, fontSize }]}>
-          データがありません
+          {t("result_no_data")}
         </Text>
       </View>
     );
@@ -56,7 +61,7 @@ export default function ResultScreen() {
   // -------------------------------------------
   const openRecipe = () => {
     if (!result.recipe) {
-      Alert.alert("エラー", "レシピが見つかりませんでした。");
+      Alert.alert(t("result_error"), t("result_recipe_not_found"));
       return;
     }
 
@@ -70,102 +75,85 @@ export default function ResultScreen() {
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={[
-        styles.container,
-        { backgroundColor: theme.background },
-      ]}
-    >
-      {/* HEADER */}
-      <Text
-        style={[
-          styles.header,
-          { color: theme.text, fontSize: fontSize + 6 },
-        ]}
-      >
-        🔍 AI分析結果
-      </Text>
-
-      <Text
-        style={[
-          styles.subText,
-          { color: isDark ? "#bbb" : "#666", fontSize: fontSize - 1 },
-        ]}
-      >
-        AIが検出した料理の情報です
-      </Text>
-
-      {/* FOOD CARD */}
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: theme.card, borderColor: theme.border },
-        ]}
-      >
-        <Ionicons name="restaurant" size={24} color="#FF6347" />
+    <GlobalWrapper>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* HEADER */}
         <Text
           style={[
-            styles.mainFood,
-            { color: theme.text, fontSize: fontSize + 4 },
+            styles.header,
+            { color: theme.text, fontSize: fontSize + 6 },
           ]}
         >
-          {result.predicted_food_jp || result.predicted_food_en}
+          🔍 {t("result_title")}
         </Text>
-      </View>
 
-      {/* CONFIDENCE */}
-      <View
-        style={[
-          styles.confidenceBox,
-          {
-            backgroundColor: isDark ? "#1a2530" : "#eef6ff",
-            borderColor: isDark ? "#334" : "#cde2ff",
-          },
-        ]}
-      >
-        <Ionicons name="speedometer" size={22} color="#007AFF" />
         <Text
           style={[
-            styles.confidenceText,
-            { color: "#007AFF", fontSize: fontSize + 1 },
+            styles.subText,
+            { color: theme.subtext, fontSize: fontSize - 1 },
           ]}
         >
-          確信度：{Math.round((result.confidence || 0) * 100)}%
+          {t("result_subtitle")}
         </Text>
-      </View>
 
-      {/* RECIPE BUTTON */}
-      <TouchableOpacity
-        style={[styles.button, styles.orangeBtn]}
-        onPress={openRecipe}
-      >
-        <Ionicons name="book" size={20} color="#fff" />
-        <Text style={[styles.btnText, { fontSize: fontSize + 1 }]}>
-          レシピを見る
+        {/* FOOD CARD */}
+        <GlassCard style={styles.card}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Ionicons name="restaurant" size={24} color={theme.primary} />
+            <Text
+              style={[
+                styles.mainFood,
+                { color: theme.text, fontSize: fontSize + 4 },
+              ]}
+            >
+              {result.predicted_food_jp || result.predicted_food_en}
+            </Text>
+          </View>
+        </GlassCard>
+
+        {/* CONFIDENCE */}
+        <GlassCard style={styles.confidenceBox}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Ionicons name="speedometer" size={22} color={theme.secondary} />
+            <Text
+              style={[
+                styles.confidenceText,
+                { color: theme.secondary, fontSize: fontSize + 1 },
+              ]}
+            >
+              {t("result_confidence")}：{Math.round((result.confidence || 0) * 100)}%
+            </Text>
+          </View>
+        </GlassCard>
+
+        {/* ACTIONS */}
+        <View style={styles.actionContainer}>
+          <AnimatedButton
+            title={t("result_view_recipe")}
+            icon="book"
+            onPress={openRecipe}
+            primary={true}
+          />
+
+          <AnimatedButton
+            title={t("result_back_home")}
+            icon="home"
+            onPress={() => navigation.navigate("Tabs", { screen: "Home" })}
+            primary={false}
+          />
+        </View>
+
+        {/* FOOTER */}
+        <Text
+          style={[
+            styles.footer,
+            { color: theme.subtext, fontSize: fontSize - 2 },
+          ]}
+        >
+          © 2025 SmartChef AI Project
         </Text>
-      </TouchableOpacity>
-
-      {/* HOME BUTTON */}
-      <TouchableOpacity
-        style={[styles.button, styles.blueBtn]}
-        onPress={() => navigation.navigate("Home")}
-      >
-        <Ionicons name="home" size={20} color="#fff" />
-        <Text style={[styles.btnText, { fontSize: fontSize + 1 }]}>
-          ホームに戻る
-        </Text>
-      </TouchableOpacity>
-
-      {/* FOOTER */}
-      <Text
-        style={[
-          styles.footer,
-          { color: isDark ? "#777" : "#aaa", fontSize: fontSize - 2 },
-        ]}
-      >
-        © 2025 SmartChef AI Project
-      </Text>
-    </ScrollView>
+      </ScrollView>
+    </GlobalWrapper>
   );
 }
 
@@ -173,37 +161,27 @@ export default function ResultScreen() {
 // Styles
 // -------------------------------------------
 const styles = StyleSheet.create({
-  container: {
+  scrollContent: {
     flexGrow: 1,
     alignItems: "center",
-    paddingTop: 60,
+    paddingTop: 40,
     paddingBottom: 40,
     paddingHorizontal: 20,
   },
 
   header: { fontWeight: "bold", marginBottom: 6 },
-  subText: { marginBottom: 20 },
+  subText: { marginBottom: 30 },
 
   card: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 20,
-    padding: 16,
-    width: "90%",
-    borderWidth: 1,
+    width: "100%",
     marginBottom: 15,
   },
 
   mainFood: { fontWeight: "bold", marginLeft: 10 },
 
   confidenceBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 20,
-    padding: 12,
-    width: "85%",
-    borderWidth: 1,
-    marginBottom: 20,
+    width: "100%",
+    marginBottom: 30,
   },
 
   confidenceText: {
@@ -211,28 +189,19 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
-  button: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "85%",
-    paddingVertical: 12,
-    borderRadius: 30,
-    marginVertical: 8,
+  actionContainer: {
+    width: "100%",
+    marginBottom: 20,
   },
 
-  btnText: { color: "#fff", fontWeight: "600", marginLeft: 8 },
-
-  orangeBtn: { backgroundColor: "#FF6347" },
-  blueBtn: { backgroundColor: "#007AFF" },
-
-  footer: { position: "absolute", bottom: 15 },
+  footer: { position: "absolute", bottom: 10 },
 
   errorContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-
   error: { fontWeight: "bold" },
 });
+
+

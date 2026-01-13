@@ -14,14 +14,17 @@ import {
   TextInput,
   Alert,
 } from "react-native";
+import * as Speech from "expo-speech";
 import { useNavigation } from "@react-navigation/native";
 
 import GlobalWrapper from "../components/GlobalWrapper";
 import TypingText from "../components/TypingText";
+import GlassCard from "../components/GlassCard";
 
 import { useTheme } from "../context/ThemeContext";
 import { Colors } from "../constants/colors";
 import { useTextSize } from "../context/TextSizeContext";
+import { useLanguage } from "../context/LanguageContext";
 
 const API_URL = "https://cautiously-mesocratic-albert.ngrok-free.dev";
 
@@ -31,6 +34,7 @@ export default function RecipeScreen({ route }) {
   const { isDark } = useTheme();
   const theme = isDark ? Colors.dark : Colors.light;
   const { fontSize } = useTextSize();
+  const { t } = useLanguage();
 
   const recipeFromResult = route?.params?.recipe;
   const recipeName = route?.params?.recipeName;
@@ -41,13 +45,13 @@ export default function RecipeScreen({ route }) {
   const normalizeRecipe = (r: any) => {
     if (!r) return null;
     return {
-      name_jp: r.name_jp || r.title_jp || r.name_en || "料理名不明",
+      name_jp: r.name_jp || r.title_jp || r.name_en || t("recipe_unknown"),
       name_en: r.name_en || r.name_jp || "",
       image: r.image || null,
       instructions_jp:
         r.instructions_jp ||
         r.instructions_en ||
-        "作り方の情報がありません。",
+        t("recipe_no_instructions"),
       ingredients_jp: r.ingredients_jp || [],
       sourceUrl: r.sourceUrl || null,
     };
@@ -116,6 +120,40 @@ export default function RecipeScreen({ route }) {
     load();
   }, [recipe]);
 
+  // ----------------------------------
+  // TTS Logic
+  // ----------------------------------
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const speakRecipe = () => {
+    if (isSpeaking) {
+      Speech.stop();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const text = `
+      ${recipe.name_jp}。
+      材料。
+      ${recipe.ingredients_jp.join("。")}。
+      作り方。
+      ${clean(recipe.instructions_jp)}
+    `;
+
+    setIsSpeaking(true);
+    Speech.speak(text, {
+      language: "ja",
+      onDone: () => setIsSpeaking(false),
+      onStopped: () => setIsSpeaking(false),
+    });
+  };
+
+  useEffect(() => {
+    return () => {
+      Speech.stop();
+    };
+  }, []);
+
   const toggleFavorite = async () => {
     const stored = JSON.parse(await AsyncStorage.getItem("favorites")) || [];
     const updated = isFavorite
@@ -130,41 +168,41 @@ export default function RecipeScreen({ route }) {
   // Share to Community
   // ----------------------------------
   const submitShare = async () => {
-  try {
-    setSharing(true);
+    try {
+      setSharing(true);
 
-    const storedUser = await AsyncStorage.getItem("user");
-    if (!storedUser) {
-      Alert.alert("エラー", "ログインが必要です");
-      return;
+      const storedUser = await AsyncStorage.getItem("user");
+      if (!storedUser) {
+        Alert.alert(t("common_error"), t("recipe_login_required"));
+        return;
+      }
+
+      const user = JSON.parse(storedUser);
+
+      const res = await fetch(`${API_URL}/api/community/post`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: user.id,
+          dish_name: recipe.name_jp,
+          dish_image: recipe.image || "https://via.placeholder.com/300",
+          opinion,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Post failed");
+      }
+
+      Alert.alert(t("recipe_success"), t("recipe_posted"));
+      setOpinion("");
+      setShareVisible(false);
+    } catch (e) {
+      Alert.alert(t("common_error"), t("recipe_failed"));
+    } finally {
+      setSharing(false);
     }
-
-    const user = JSON.parse(storedUser);
-
-    const res = await fetch(`${API_URL}/api/community/post`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: user.id,
-        dish_name: recipe.name_jp,
-        dish_image: recipe.image || "https://via.placeholder.com/300",
-        opinion,
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error("Post failed");
-    }
-
-    Alert.alert("成功", "コミュニティに投稿しました！");
-    setOpinion("");
-    setShareVisible(false);
-  } catch (e) {
-    Alert.alert("エラー", "投稿に失敗しました");
-  } finally {
-    setSharing(false);
-  }
-};
+  };
 
 
   // ----------------------------------
@@ -196,7 +234,7 @@ export default function RecipeScreen({ route }) {
       <GlobalWrapper>
         <View style={styles.center}>
           <Text style={{ fontSize: fontSize + 2, color: theme.text }}>
-            レシピが見つかりません
+            {t("result_recipe_not_found")}
           </Text>
         </View>
       </GlobalWrapper>
@@ -209,12 +247,7 @@ export default function RecipeScreen({ route }) {
   return (
     <GlobalWrapper>
       <ScrollView style={{ backgroundColor: theme.background }}>
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: theme.card, borderColor: theme.border },
-          ]}
-        >
+        <GlassCard style={styles.card}>
           <Image
             source={{ uri: recipe.image || "https://via.placeholder.com/400" }}
             style={styles.image}
@@ -231,6 +264,17 @@ export default function RecipeScreen({ route }) {
             </Text>
 
             <View style={{ flexDirection: "row" }}>
+              <TouchableOpacity
+                style={{ marginRight: 12 }}
+                onPress={speakRecipe}
+              >
+                <Ionicons
+                  name={isSpeaking ? "stop-circle" : "volume-high"}
+                  size={26}
+                  color={isSpeaking ? "#FF6347" : theme.text}
+                />
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={{ marginRight: 12 }}
                 onPress={() => setShareVisible(true)}
@@ -251,27 +295,36 @@ export default function RecipeScreen({ route }) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </GlassCard>
+
+        {/* BACK BUTTON OVERLAY (New) */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate("Tabs");
+            }
+          }}
+        >
+          <Ionicons name="arrow-back" size={24} color="white" />
+        </TouchableOpacity>
 
         <Text style={[styles.sectionTitle, { fontSize: fontSize + 3 }]}>
-          🍴 材料
+          🍴 {t("recipe_ingredients")}
         </Text>
 
-        <View
-          style={[
-            styles.ingredientsBox,
-            { backgroundColor: theme.card, borderColor: theme.border },
-          ]}
-        >
+        <GlassCard style={styles.ingredientsBox} delay={200}>
           {recipe.ingredients_jp.map((i: string, idx: number) => (
             <Text key={idx} style={{ fontSize, color: theme.text }}>
               • {i}
             </Text>
           ))}
-        </View>
+        </GlassCard>
 
         <Text style={[styles.sectionTitle, { fontSize: fontSize + 3 }]}>
-          🧑‍🍳 作り方
+          🧑‍🍳 {t("recipe_instructions")}
         </Text>
 
         <TypingText
@@ -284,7 +337,7 @@ export default function RecipeScreen({ route }) {
             style={[styles.link, { fontSize: fontSize + 1 }]}
             onPress={() => Linking.openURL(recipe.sourceUrl)}
           >
-            🔗 View Full Recipe
+            🔗 {t("recipe_view_full")}
           </Text>
         )}
       </ScrollView>
@@ -301,11 +354,11 @@ export default function RecipeScreen({ route }) {
             ]}
           >
             <Text style={{ fontSize: fontSize + 2, marginBottom: 12 }}>
-              コミュニティに投稿
+              {t("recipe_share_title")}
             </Text>
 
             <TextInput
-              placeholder="感想を書いてください（任意）"
+              placeholder={t("recipe_share_placeholder")}
               placeholderTextColor="#999"
               value={opinion}
               onChangeText={setOpinion}
@@ -318,12 +371,12 @@ export default function RecipeScreen({ route }) {
 
             <View style={styles.modalButtons}>
               <TouchableOpacity onPress={() => setShareVisible(false)}>
-                <Text style={{ color: "gray" }}>キャンセル</Text>
+                <Text style={{ color: "gray" }}>{t("recipe_cancel")}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={submitShare} disabled={sharing}>
                 <Text style={{ color: "#FF7043", fontWeight: "bold" }}>
-                  {sharing ? "投稿中..." : "投稿"}
+                  {sharing ? t("recipe_posting") : t("recipe_post")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -340,10 +393,8 @@ export default function RecipeScreen({ route }) {
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   card: {
-    borderRadius: 14,
     marginBottom: 16,
     overflow: "hidden",
-    borderWidth: 1,
   },
   image: { width: "100%", height: 250 },
   titleRow: {
@@ -360,9 +411,7 @@ const styles = StyleSheet.create({
   },
   ingredientsBox: {
     padding: 14,
-    borderRadius: 12,
     marginBottom: 16,
-    borderWidth: 1,
   },
   link: {
     marginTop: 20,
@@ -390,5 +439,13 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
+  },
+  backButton: {
+    position: "absolute",
+    top: 20,
+    left: 20,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    padding: 8,
+    borderRadius: 20,
   },
 });

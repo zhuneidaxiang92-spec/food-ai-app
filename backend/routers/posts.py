@@ -4,8 +4,8 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from database import get_db
-import models
+from ..database import get_db
+from .. import models
 
 router = APIRouter(prefix="/posts", tags=["Posts"])
 

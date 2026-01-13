@@ -9,6 +9,7 @@ import {
 import AppNavigator from "./navigation/AppNavigator";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { TextSizeProvider } from "./context/TextSizeContext";
+import { LanguageProvider } from "./context/LanguageContext";
 import { Colors } from "./constants/colors";
 
 // Sync navigation theme with custom theme
@@ -17,6 +18,28 @@ function ThemedNavigation() {
 
   // Keep internal fonts (regular, medium, bold)
   const baseTheme = isDark ? DarkTheme : DefaultTheme;
+
+  // Mock Login for Development
+  React.useEffect(() => {
+    const injectMockUser = async () => {
+      const AsyncStorage = require("@react-native-async-storage/async-storage").default;
+      const user = await AsyncStorage.getItem("user");
+      if (!user) {
+        console.log("Injecting mock user for development...");
+        await AsyncStorage.setItem(
+          "user",
+          JSON.stringify({
+            name: "Test User",
+            access_token: "mock_token",
+            email: "test@example.com",
+            id: 1,
+            login_provider: "email",
+          })
+        );
+      }
+    };
+    injectMockUser();
+  }, []);
 
   return (
     <NavigationContainer
@@ -43,7 +66,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <TextSizeProvider>
-        <ThemedNavigation />
+        <LanguageProvider>
+          <ThemedNavigation />
+        </LanguageProvider>
       </TextSizeProvider>
     </ThemeProvider>
   );

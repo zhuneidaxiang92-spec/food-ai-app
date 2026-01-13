@@ -3,24 +3,29 @@ import {
   View,
   Text,
   TextInput,
-  Button,
+  TouchableOpacity,
   StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Google from "expo-auth-session/providers/google";
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+
+import { Colors } from "../constants/colors";
+import { getApiUrl } from "../constants/config";
+
 WebBrowser.maybeCompleteAuthSession();
 
-// ⭐ Your backend URL
-const API_URL = "https://cautiously-mesocratic-albert.ngrok-free.dev";
+const API_URL = getApiUrl();
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
@@ -29,7 +34,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ⭐ Google OAuth configuration
+  // Google OAuth
   const [request, response, promptAsync] = Google.useAuthRequest(
     {
       iosClientId:
@@ -45,15 +50,6 @@ export default function LoginScreen() {
     }
   );
 
-  // Debug redirect URL
-  useEffect(() => {
-    console.log(
-      "🔥 Redirect URI from Expo:",
-      AuthSession.makeRedirectUri({ useProxy: true })
-    );
-  }, []);
-
-  // Handle Google login
   useEffect(() => {
     if (response?.type === "success") {
       const accessToken = response.authentication?.accessToken;
@@ -63,7 +59,6 @@ export default function LoginScreen() {
     }
   }, [response]);
 
-  // ⭐ Send Google OAuth token to backend
   const handleGoogleLogin = async (accessToken: string) => {
     try {
       const res = await fetch(`${API_URL}/auth/google`, {
@@ -72,35 +67,45 @@ export default function LoginScreen() {
         body: JSON.stringify({ access_token: accessToken }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch { }
 
       if (res.ok) {
-        // ⭐ Save user object in AsyncStorage
+        // backend の返却形式が違っても落ちないように吸収
+        const userName = data.user?.name ?? data.name ?? "User";
+        const userEmail = data.user?.email ?? data.email ?? null;
+        const userId = data.user?.id ?? data.user_id ?? null;
+
+        // JWT を返す実装なら access_token を保存、無いなら null
+        const jwtToken = data.access_token ?? data.token ?? null;
+
         await AsyncStorage.setItem(
           "user",
           JSON.stringify({
-            name: data.name,
-            access_token: data.access_token,
-            email: data.email || null,
+            name: userName,
+            access_token: jwtToken,
+            email: userEmail,
+            id: userId,
+            login_provider: "google",
           })
         );
 
-        Alert.alert("ログイン成功", `${data.name} さんようこそ！`);
-
-        navigation.reset({
-        index: 0,
-        routes: [{ name: "Tabs" }],
-          });
-
+        Alert.alert("ログイン成功", `${userName} さんようこそ！`);
+        navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
       } else {
-        Alert.alert("ログイン失敗", data.detail || "Google ログインに失敗しました");
+        Alert.alert(
+          "ログイン失敗",
+          data.detail || data.message || `(${res.status}) ${text}` || "Google ログインに失敗しました"
+        );
       }
     } catch (err) {
       Alert.alert("エラー", "Google ログイン通信エラー");
     }
   };
 
-  // ⭐ Email login method
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("入力エラー", "メールアドレスとパスワードを入力してください");
@@ -110,33 +115,37 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/login`, {
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch { }
 
       if (res.ok) {
-        // ⭐ Backend returns: { access_token, name }
         await AsyncStorage.setItem(
           "user",
           JSON.stringify({
-            name: data.name,
+            name: data.name ?? "User",
             access_token: data.access_token,
             email: email,
+            id: data.user_id,
+            login_provider: "email",
           })
         );
 
-        Alert.alert("ログイン成功", `${data.name} さんようこそ！`);
-
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "Tabs" }],
-        });
+        Alert.alert("ログイン成功", `${data.name ?? "ユーザー"} さんようこそ！`);
+        navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
       } else {
-        Alert.alert("ログイン失敗", data.detail || "ログインに失敗しました");
+        Alert.alert(
+          "ログイン失敗",
+          data.detail || data.message || `(${res.status}) ${text}` || "ログインに失敗しました"
+        );
       }
     } catch (err) {
       Alert.alert("エラー", "通信に失敗しました");
@@ -151,48 +160,86 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.container}>
-          <Text style={styles.title}>ログイン</Text>
-
-          <Text style={styles.label}>メールアドレス</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="例: example@mail.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-          />
-
-          <Text style={styles.label}>パスワード</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="●●●●●●"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-
-          <Button
-            title={loading ? "ログイン中..." : "ログイン"}
-            onPress={handleLogin}
-            disabled={loading}
-          />
-
-          <TouchableOpacity
-            style={styles.googleButton}
-            onPress={() => promptAsync()}
-          >
-            <Text style={styles.googleText}>Google でログイン</Text>
-          </TouchableOpacity>
-
-          <View style={{ marginTop: 20 }}>
-            <Button
-              title="新規登録はこちら"
-              onPress={() => navigation.navigate("Signup")}
-              color="#888"
-            />
+        <LinearGradient colors={["#FFF", "#FFF"]} style={styles.container}>
+          <View style={styles.header}>
+            <View style={styles.logoCircle}>
+              <Text style={{ fontSize: 40 }}>🥗</Text>
+            </View>
+            <Text style={styles.appName}>Food AI</Text>
+            <Text style={styles.tagline}>あなたの専属シェフ</Text>
           </View>
-        </View>
+
+          <View style={styles.formContainer}>
+            <Text style={styles.welcomeText}>おかえりなさい</Text>
+
+            <View style={styles.inputContainer}>
+              <Ionicons
+                name="mail-outline"
+                size={20}
+                color="#999"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="メールアドレス"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={20}
+                color="#999"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="パスワード"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.loginButton}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.loginButtonText}>ログイン</Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>または</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity
+              style={styles.googleButton}
+              onPress={() => promptAsync()}
+              disabled={!request}
+            >
+              <Ionicons name="logo-google" size={20} color="#333" />
+              <Text style={styles.googleButtonText}>Google でログイン</Text>
+            </TouchableOpacity>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>アカウントをお持ちでないですか？</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
+                <Text style={styles.signUpText}>新規登録</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </LinearGradient>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
@@ -202,39 +249,117 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
-    padding: 24,
-    backgroundColor: "#fff",
   },
-  title: {
-    fontSize: 26,
+  header: {
+    alignItems: "center",
+    marginBottom: 40,
+  },
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  appName: {
+    fontSize: 28,
     fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
+    color: "#1F2937",
   },
-  label: {
-    fontSize: 14,
-    marginBottom: 4,
-    marginTop: 12,
-    color: "#333",
+  tagline: {
+    fontSize: 16,
+    color: "#6B7280",
+    marginTop: 4,
+  },
+  formContainer: {
+    paddingHorizontal: 24,
+  },
+  welcomeText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 24,
+    color: "#111",
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    height: 56,
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    backgroundColor: "#fff",
-    marginBottom: 10,
+    flex: 1,
+    height: "100%",
+    fontSize: 16,
+    color: "#374151",
+  },
+  loginButton: {
+    backgroundColor: Colors.light.primary,
+    height: 56,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 8,
+    elevation: 2,
+  },
+  loginButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#E5E7EB",
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: "#9CA3AF",
+    fontSize: 14,
   },
   googleButton: {
-    marginTop: 20,
-    backgroundColor: "#4285F4",
-    paddingVertical: 14,
-    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    height: 56,
+    borderRadius: 12,
   },
-  googleText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
+  googleButtonText: {
+    marginLeft: 12,
     fontSize: 16,
+    color: "#374151",
+    fontWeight: "600",
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 32,
+  },
+  footerText: {
+    color: "#6B7280",
+    fontSize: 14,
+  },
+  signUpText: {
+    color: Colors.light.primary,
+    fontSize: 14,
+    fontWeight: "bold",
+    marginLeft: 4,
   },
 });

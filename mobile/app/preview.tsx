@@ -9,16 +9,22 @@ import {
   Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { RootStackParamList } from "../App";
+import type { RootStackParamList } from "../navigation/AppNavigator";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { useTheme } from "../context/ThemeContext";
 import { Colors } from "../constants/colors";
-import { useTextSize } from "../context/TextSizeContext"; // ← ADD
+import { useTextSize } from "../context/TextSizeContext";
+import { useLanguage } from "../context/LanguageContext";
+import { getApiUrl } from "../constants/config";
+import GlassCard from "../components/GlassCard";
+import AnimatedButton from "../components/AnimatedButton";
+import GlobalWrapper from "../components/GlobalWrapper";
 
 export default function PreviewScreen() {
   const navigation =
@@ -27,14 +33,13 @@ export default function PreviewScreen() {
   const { isDark } = useTheme();
   const theme = isDark ? Colors.dark : Colors.light;
 
-  const { fontSize } = useTextSize(); // ← ADD
+  const { fontSize } = useTextSize();
+  const { t } = useLanguage();
 
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const API_URL =
-    (process.env.EXPO_PUBLIC_API_URL ||
-      "https://cautiously-mesocratic-albert.ngrok-free.dev").replace(/\/$/, "");
+  const API_URL = getApiUrl();
 
   // PICK IMAGE
   const pickImage = async () => {
@@ -42,7 +47,7 @@ export default function PreviewScreen() {
       await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permission.granted) {
-      Alert.alert("許可が必要です", "写真へのアクセスを許可してください。");
+      Alert.alert(t("scan_permission_title"), t("scan_permission_msg"));
       return;
     }
 
@@ -59,7 +64,7 @@ export default function PreviewScreen() {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
 
     if (!permission.granted) {
-      Alert.alert("許可が必要です", "カメラへのアクセスを許可してください。");
+      Alert.alert(t("scan_permission_title"), t("scan_permission_msg"));
       return;
     }
 
@@ -79,13 +84,23 @@ export default function PreviewScreen() {
     setLoading(true);
 
     try {
-      const filename = imageUri.split("/").pop() || "photo.jpg";
+      // --- A. RESIZE IMAGE (Optimization) ---
+      const manipResult = await manipulateAsync(
+        imageUri,
+        [{ resize: { width: 800 } }], // Resize to max 800px width
+        { compress: 0.7, format: SaveFormat.JPEG }
+      );
+
+      const finalUri = manipResult.uri;
+      // ---------------------------------------
+
+      const filename = finalUri.split("/").pop() || "photo.jpg";
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : "image/jpeg";
 
       const formData = new FormData();
       formData.append("file", {
-        uri: imageUri,
+        uri: finalUri,
         name: filename,
         type,
       } as any);
@@ -98,7 +113,7 @@ export default function PreviewScreen() {
       const data = res.data;
 
       if (!data || data.error) {
-        Alert.alert("Error", "AI分析に失敗しました。");
+        Alert.alert(t("result_error"), t("scan_error"));
         setLoading(false);
         return;
       }
@@ -114,8 +129,10 @@ export default function PreviewScreen() {
       const newItem = {
         date: new Date().toISOString().split("T")[0],
         name: normalized.predicted_food_jp,
+        name_en: normalized.predicted_food_en || "", // ✅ Fallback to empty string
         image: normalized.image,
         confidence: normalized.confidence,
+        recipe: normalized.recipe, // ✅ CACHE FULL RECIPE
       };
 
       const oldHistory =
@@ -134,8 +151,8 @@ export default function PreviewScreen() {
     } catch (error) {
       console.error("❌ Error analyzing:", error);
       Alert.alert(
-        "Error",
-        "AI分析に失敗しました。サーバーまたはネットワークを確認してください。"
+        t("result_error"),
+        t("scan_error_detail")
       );
     } finally {
       setLoading(false);
@@ -143,74 +160,87 @@ export default function PreviewScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
-      <Text style={[styles.header, { color: theme.text, fontSize: fontSize + 4 }]}>
-        📸 食べ物を分析しよう
-      </Text>
+    <GlobalWrapper>
+      <View style={styles.contentContainer}>
+        {/* Header */}
+        <Text
+          style={[
+            styles.header,
+            { color: theme.text, fontSize: fontSize + 8 },
+          ]}
+        >
+          📸 {t("scan_title")}
+        </Text>
 
-      <Text
-        style={[
-          styles.subText,
-          { color: isDark ? "#bbb" : "#666", fontSize },
-        ]}
-      >
-        AIが料理を認識してレシピを表示します
-      </Text>
+        <Text
+          style={[
+            styles.subText,
+            { color: theme.subtext, fontSize },
+          ]}
+        >
+          {t("scan_subtitle")}
+        </Text>
 
-      {/* Preview Box */}
-      <View
-        style={[
-          styles.previewBox,
-          {
-            backgroundColor: isDark ? "#222" : "#fafafa",
-            borderColor: isDark ? "#444" : "#eee",
-          },
-        ]}
-      >
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.image} />
-        ) : (
-          <Ionicons
-            name="image-outline"
-            size={80}
-            color={isDark ? "#777" : "#ccc"}
+        {/* Preview Box */}
+        <GlassCard style={styles.previewCard}>
+          <View style={styles.previewContent}>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={styles.image} />
+            ) : (
+              <View style={styles.placeholder}>
+                <Ionicons
+                  name="image-outline"
+                  size={60}
+                  color={theme.subtext}
+                />
+                <Text style={{ color: theme.subtext, marginTop: 10 }}>
+                  {t("scan_placeholder")}
+                </Text>
+              </View>
+            )}
+          </View>
+        </GlassCard>
+
+        {/* CONTROLS */}
+        <View style={styles.controls}>
+          <AnimatedButton
+            title={t("scan_pick_image")}
+            icon="images"
+            onPress={pickImage}
+            primary={false}
           />
+          <AnimatedButton
+            title={t("scan_take_photo")}
+            icon="camera"
+            onPress={takePhoto}
+            primary={false}
+          />
+
+          {imageUri && (
+            <View style={{ marginTop: 12 }}>
+              <AnimatedButton
+                title={t("scan_analyze")}
+                icon="search"
+                onPress={analyzeImage}
+                primary={true}
+              />
+            </View>
+          )}
+        </View>
+
+        {/* LOADING */}
+        {loading && (
+          <GlassCard style={styles.loadingBox}>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <Text
+              style={[styles.loadingText, { fontSize, color: theme.primary }]}
+            >
+              {t("scan_analyzing")}
+            </Text>
+          </GlassCard>
         )}
       </View>
-
-      {/* PICK IMAGE */}
-      <TouchableOpacity style={styles.pickBtn} onPress={pickImage}>
-        <Ionicons name="images" size={22} color="#fff" />
-        <Text style={[styles.btnText, { fontSize }]}>画像を選択</Text>
-      </TouchableOpacity>
-
-      {/* TAKE PHOTO */}
-      <TouchableOpacity style={styles.cameraBtn} onPress={takePhoto}>
-        <Ionicons name="camera" size={22} color="#fff" />
-        <Text style={[styles.btnText, { fontSize }]}>カメラで撮影</Text>
-      </TouchableOpacity>
-
-      {/* ANALYZE BUTTON */}
-      {imageUri && (
-        <TouchableOpacity style={styles.analyzeBtn} onPress={analyzeImage}>
-          <Ionicons name="search" size={22} color="#fff" />
-          <Text style={[styles.btnText, { fontSize }]}>AIで分析する</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* LOADING */}
-      {loading && (
-        <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#FF6347" />
-          <Text
-            style={[styles.loadingText, { fontSize, color: "#FF6347" }]}
-          >
-            分析中...
-          </Text>
-        </View>
-      )}
-    </View>
+    </GlobalWrapper>
   );
 }
 
@@ -218,63 +248,48 @@ export default function PreviewScreen() {
 // Styles
 //
 const styles = StyleSheet.create({
-  container: {
+  contentContainer: {
     flex: 1,
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 70,
+    paddingTop: 40,
   },
 
-  header: { fontSize: 24, fontWeight: "bold", marginBottom: 6 },
-  subText: { fontSize: 14, marginBottom: 20 },
+  header: { fontWeight: "900", marginBottom: 6 }, // Extra bold
+  subText: { fontSize: 14, marginBottom: 20, textAlign: "center" },
 
-  previewBox: {
-    width: 280,
-    height: 280,
-    borderRadius: 20,
+  previewCard: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 24,
+    marginBottom: 20,
+  },
+
+  previewContent: {
+    width: "100%",
+    height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    marginBottom: 25,
   },
 
-  image: { width: "100%", height: "100%", borderRadius: 20 },
+  placeholder: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-  pickBtn: {
+  image: { width: "100%", height: "100%", borderRadius: 16 },
+
+  controls: {
+    width: "100%",
+  },
+
+  loadingBox: {
+    position: "absolute",
+    bottom: 50,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
     paddingHorizontal: 30,
-    borderRadius: 30,
-    marginBottom: 10,
+    paddingVertical: 15,
   },
-
-  cameraBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ffaa00",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 30,
-    marginBottom: 10,
-  },
-
-  analyzeBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FF6347",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 30,
-  },
-
-  btnText: {
-    color: "#fff",
-    fontWeight: "600",
-    marginLeft: 8,
-  },
-
-  loadingBox: { flexDirection: "row", alignItems: "center", marginTop: 20 },
-  loadingText: { marginLeft: 10 },
+  loadingText: { marginLeft: 10, fontWeight: "bold" },
 });

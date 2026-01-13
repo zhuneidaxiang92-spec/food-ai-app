@@ -14,6 +14,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import Slider from "@react-native-community/slider";
 import { useTextSize } from "../context/TextSizeContext";
+import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 import { Colors } from "../constants/colors";
 
@@ -26,6 +27,9 @@ export default function SettingsScreen() {
 
   // Text Size (Dynamic scaling)
   const { fontSize, setFontSize } = useTextSize();
+
+  // Language
+  const { language, toggleLanguage, t } = useLanguage();
 
   // =========================
   // 🔐 LOGOUT FUNCTION
@@ -57,7 +61,7 @@ export default function SettingsScreen() {
           { color: theme.text, fontSize: fontSize + 4 },
         ]}
       >
-        アカウント設定
+        {t("settings_title")}
       </Text>
 
       {/* Profile Section */}
@@ -73,7 +77,7 @@ export default function SettingsScreen() {
             { color: theme.text, fontSize: fontSize + 2 },
           ]}
         >
-          プロフィール
+          {t("settings_profile")}
         </Text>
 
         <TouchableOpacity
@@ -82,7 +86,7 @@ export default function SettingsScreen() {
         >
           <Ionicons name="person-circle-outline" size={28} color="#007AFF" />
           <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-            プロフィールを編集
+            {t("settings_edit_profile")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -100,17 +104,20 @@ export default function SettingsScreen() {
             { color: theme.text, fontSize: fontSize + 2 },
           ]}
         >
-          アプリ設定
+          {t("settings_app")}
         </Text>
 
         {/* Language */}
         <TouchableOpacity
           style={styles.row}
-          onPress={() => navigation.navigate("Language")}
+          onPress={toggleLanguage}
         >
           <Ionicons name="language-outline" size={26} color="#007AFF" />
           <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-            言語設定 (日本語 / English)
+            {t("settings_language")}
+          </Text>
+          <Text style={{ marginLeft: "auto", color: theme.subtext }}>
+            {language === "ja" ? "日本語" : "English"}
           </Text>
         </TouchableOpacity>
 
@@ -119,7 +126,7 @@ export default function SettingsScreen() {
           <Ionicons name="text-outline" size={26} color="#007AFF" />
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-              文字サイズ調整
+              {t("settings_text_size")}
             </Text>
 
             <Slider
@@ -134,7 +141,7 @@ export default function SettingsScreen() {
             />
 
             <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-              現在のサイズ: {fontSize}
+              {t("settings_current_size")}: {fontSize}
             </Text>
           </View>
         </View>
@@ -148,7 +155,7 @@ export default function SettingsScreen() {
           />
 
           <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-            ダークモード
+            {t("settings_dark_mode")}
           </Text>
 
           <Switch
@@ -174,7 +181,7 @@ export default function SettingsScreen() {
             { color: theme.text, fontSize: fontSize + 2 },
           ]}
         >
-          データ管理
+          {t("settings_data")}
         </Text>
 
         <TouchableOpacity
@@ -183,7 +190,7 @@ export default function SettingsScreen() {
         >
           <Ionicons name="heart-outline" size={26} color="#FF3B30" />
           <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-            お気に入りを開く
+            {t("settings_open_fav")}
           </Text>
         </TouchableOpacity>
 
@@ -193,19 +200,19 @@ export default function SettingsScreen() {
         >
           <Ionicons name="time-outline" size={26} color="#FF9500" />
           <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-            履歴を見る
+            {t("settings_view_hist")}
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* LOGOUT */}
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-        <Text style={styles.logoutText}>ログアウト</Text>
+        <Text style={styles.logoutText}>{t("settings_logout")}</Text>
       </TouchableOpacity>
 
       {/* Version */}
       <Text style={[styles.version, { color: theme.text, fontSize }]}>
-        SmartChef AI App v1.0.0
+        {t("settings_version")}
       </Text>
     </ScrollView>
   );

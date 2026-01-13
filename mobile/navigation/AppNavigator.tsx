@@ -4,6 +4,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import LoginScreen from "../app/login";
 import SignupScreen from "../app/signup";
 import TabsNavigator from "./TabsNavigator";
+import ResultScreen from "../app/result";
+import RecipeScreen from "../app/recipe";
 
 // ⭐ Signup onboarding screens
 import SignupCategoryScreen from "../app/auth/SignupCategoryScreen";
@@ -15,6 +17,8 @@ export type RootStackParamList = {
   SignupCategoryScreen: { userId: number };
   SignupFoodScreen: { userId: number; category: string };
   Tabs: undefined;
+  Result: { result: any; fallbackImage: any };
+  Recipe: { recipe: any; recipeName?: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -22,7 +26,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function AppNavigator() {
   return (
     <Stack.Navigator
-      initialRouteName="Login"
+      initialRouteName="Tabs"
       screenOptions={{ headerShown: false }}
     >
       {/* AUTH SCREENS */}
@@ -41,6 +45,10 @@ export default function AppNavigator() {
 
       {/* MAIN APP (BOTTOM TABS) */}
       <Stack.Screen name="Tabs" component={TabsNavigator} />
+
+      {/* DETAIL SCREENS (Pushed on stack) */}
+      <Stack.Screen name="Result" component={ResultScreen} />
+      <Stack.Screen name="Recipe" component={RecipeScreen} />
     </Stack.Navigator>
   );
 }

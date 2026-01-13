@@ -21,9 +21,9 @@ print("MYSQL_HOST =", os.getenv("MYSQL_HOST"))
 from fastapi import FastAPI, File, UploadFile, Body
 from fastapi.middleware.cors import CORSMiddleware
 
-import models
-import database
-from routers import auth, auth_google, posts, community
+from . import models
+from . import database
+from .routers import auth, auth_google, posts, community
 
 import requests
 from PIL import Image
@@ -50,6 +50,23 @@ def translate_to_japanese(text: str) -> str:
         return data["translations"][0]["text"]
     except Exception as e:
         print("❌ Translation error:", e)
+        return text
+
+def translate_to_english(text: str) -> str:
+    try:
+        if not text:
+            return ""
+        url = "https://api-free.deepl.com/v2/translate"
+        params = {
+            "auth_key": DEEPL_API_KEY,
+            "text": text,
+            "target_lang": "EN"
+        }
+        response = requests.post(url, data=params)
+        data = response.json()
+        return data["translations"][0]["text"]
+    except Exception as e:
+        print("❌ Translation error (EN):", e)
         return text
 
 
@@ -233,7 +250,12 @@ def get_recipe_by_name(food_name: str):
 
         recipe_id = None
 
-        # Search Spoonacular
+        # 1. Search Spoonacular (Original Name)
+        search_queries = [
+            food_name,
+            food_name.replace("_", " "),
+        ]
+        
         for q in search_queries:
             search_url = (
                 f"https://api.spoonacular.com/recipes/complexSearch"
@@ -244,6 +266,22 @@ def get_recipe_by_name(food_name: str):
             if search_data.get("results"):
                 recipe_id = search_data["results"][0]["id"]
                 break
+        
+        # 2. If not found, try translating to English and search again
+        if not recipe_id:
+            print(f"⚠️ No results for '{food_name}', translating to English...")
+            translated_name = translate_to_english(food_name)
+            print(f"➡️ Translated: {translated_name}")
+            
+            # Simple retry with translated name
+            search_url = (
+                f"https://api.spoonacular.com/recipes/complexSearch"
+                f"?query={translated_name}&number=1&apiKey={SPOONACULAR_API_KEY}"
+            )
+            search_data = requests.get(search_url).json()
+
+            if search_data.get("results"):
+                recipe_id = search_data["results"][0]["id"]
 
         if not recipe_id:
             return {"detail": "Not Found", "recipe": None}

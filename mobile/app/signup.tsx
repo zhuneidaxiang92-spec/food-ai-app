@@ -15,7 +15,7 @@ import { useNavigation } from "@react-navigation/native";
 
 const API_URL = "https://cautiously-mesocratic-albert.ngrok-free.dev";
 
-    console.log("API_URL =", process.env.EXPO_PUBLIC_API_URL);
+console.log("API_URL =", process.env.EXPO_PUBLIC_API_URL);
 
 
 
@@ -44,7 +44,7 @@ export default function SignUpScreen() {
     setLoading(true);
     try {
       console.log("Sending JSON:", { name: username, email, password });
-      const res = await fetch(`${API_URL}/api/register`, {
+      const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: username, email, password }),

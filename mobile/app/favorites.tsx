@@ -15,16 +15,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import { Colors } from "../constants/colors";
 import { useTextSize } from "../context/TextSizeContext";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function FavoritesScreen() {
-  const navigation = useNavigation();
-  const [favorites, setFavorites] = useState([]);
+  const navigation = useNavigation<any>();
+  const [favorites, setFavorites] = useState<any[]>([]);
 
   const { isDark } = useTheme();
   const theme = isDark ? Colors.dark : Colors.light;
 
   // TEXT SIZE CONTEXT
   const { fontSize } = useTextSize();
+  const { t } = useLanguage();
 
   const loadFavorites = async () => {
     const stored = JSON.parse(await AsyncStorage.getItem("favorites")) || [];
@@ -48,13 +50,13 @@ export default function FavoritesScreen() {
     >
       {/* Title */}
       <Text style={[styles.title, { color: theme.text, fontSize: fontSize + 4 }]}>
-        お気に入り
+        {t("fav_title")}
       </Text>
 
       {/* Empty Message */}
       {favorites.length === 0 ? (
         <Text style={[styles.empty, { color: isDark ? "#bbb" : "#777", fontSize }]}>
-          お気に入りがまだありません
+          {t("fav_empty")}
         </Text>
       ) : (
         favorites.map((item, idx) => (
@@ -94,10 +96,15 @@ export default function FavoritesScreen() {
               {/* View Recipe */}
               <TouchableOpacity
                 style={styles.recipeBtn}
-                onPress={() => navigation.navigate("Recipe", { recipe: item })}
+                onPress={() =>
+                  navigation.navigate("Recipe", {
+                    recipe: item,
+                    recipeName: item.name_jp,
+                  })
+                }
               >
                 <Text style={[styles.recipeText, { fontSize }]}>
-                  レシピを見る
+                  {t("fav_recipe_btn")}
                 </Text>
               </TouchableOpacity>
 
@@ -105,10 +112,10 @@ export default function FavoritesScreen() {
               <TouchableOpacity
                 style={styles.deleteBtn}
                 onPress={() =>
-                  Alert.alert("削除しますか？", item.name_jp, [
-                    { text: "キャンセル" },
+                  Alert.alert(t("fav_delete_alert_title"), item.name_jp, [
+                    { text: t("fav_delete_alert_cancel") },
                     {
-                      text: "削除",
+                      text: t("fav_delete_alert_delete"),
                       style: "destructive",
                       onPress: () => removeFavorite(item.name_jp),
                     },
