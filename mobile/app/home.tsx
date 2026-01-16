@@ -27,8 +27,6 @@ import AnimatedButton from "../components/AnimatedButton";
 import HeroHeader from "../components/HeroHeader";
 import PulseCard from "../components/PulseCard";
 import NotificationCenter, { Notification } from "../components/NotificationCenter";
-import StatsCard from "../components/StatsCard";
-import QuickAction from "../components/QuickAction";
 import TrendingCard from "../components/TrendingCard";
 
 const API_URL = getApiUrl();
@@ -61,9 +59,6 @@ export default function HomeScreen({ navigation }: any) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // 統計データ
-  const [stats, setStats] = useState({ favorites: 0, history: 0, posts: 0 });
-
   // トレンドデータ
   const [trendingFoods, setTrendingFoods] = useState<any[]>([]);
 
@@ -79,10 +74,6 @@ export default function HomeScreen({ navigation }: any) {
     loadRecommendations();
     loadCommunityFeed();
     loadNotifications();
-    loadRecommendations();
-    loadCommunityFeed();
-    loadNotifications();
-    loadStats();
     loadTrending();
   }, []);
 
@@ -167,8 +158,6 @@ export default function HomeScreen({ navigation }: any) {
           description: post.opinion // 簡易的な説明として
         });
         await AsyncStorage.setItem("favorites", JSON.stringify(favorites));
-        // Stats update
-        loadStats();
       }
     } catch (e) {
       console.log("Error adding to favorites", e);
@@ -217,21 +206,7 @@ export default function HomeScreen({ navigation }: any) {
     }
   };
 
-  const loadStats = async () => {
-    try {
-      const favs = await AsyncStorage.getItem("favorites");
-      const hist = await AsyncStorage.getItem("history");
-      const posts = await AsyncStorage.getItem("userPosts");
 
-      setStats({
-        favorites: favs ? JSON.parse(favs).length : 0,
-        history: hist ? JSON.parse(hist).length : 0,
-        posts: posts ? JSON.parse(posts).length : 0,
-      });
-    } catch (e) {
-      console.log("ERROR loading stats:", e);
-    }
-  };
 
   const handleMarkAsRead = async (id: string) => {
     try {
@@ -351,70 +326,6 @@ export default function HomeScreen({ navigation }: any) {
           notificationCount={unreadCount}
           onNotificationPress={() => setNotificationVisible(true)}
         />
-
-        {/* Stats Cards Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.text, fontSize: fontSize + 4 }]}>
-            {t("home_stats")}
-          </Text>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
-          <StatsCard
-            icon="heart"
-            value={stats.favorites}
-            label={t("home_favorites_stat")}
-            onPress={() => navigation.navigate("Tabs", { screen: "Favorites" })}
-            delay={0}
-            gradientColors={["#FF6B9D", "#FFA06B"]}
-          />
-          <StatsCard
-            icon="time"
-            value={stats.history}
-            label={t("home_history_stat")}
-            onPress={() => navigation.navigate("Tabs", { screen: "History" })}
-            delay={100}
-            gradientColors={["#4ECDC4", "#44A08D"]}
-          />
-          <StatsCard
-            icon="chatbubbles"
-            value={stats.posts}
-            label={t("home_posts_stat")}
-            onPress={() => navigation.navigate("Tabs", { screen: "Home" })}
-            delay={200}
-            gradientColors={["#A770EF", "#CF8BF3"]}
-          />
-        </ScrollView>
-
-        {/* Quick Actions Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.text, fontSize: fontSize + 4 }]}>
-            {t("home_quick_actions")}
-          </Text>
-        </View>
-        <View style={styles.quickActionsGrid}>
-          <QuickAction
-            icon="scan"
-            label={t("home_scan")}
-            onPress={() => navigation.navigate("Tabs", { screen: "Scan" })}
-            delay={0}
-            gradientColors={[theme.gradientStart, theme.gradientEnd]}
-          />
-          <QuickAction
-            icon="search"
-            label={t("home_search")}
-            onPress={() => navigation.navigate("Search")}
-            delay={50}
-            gradientColors={[theme.accentGradientStart, theme.accentGradientEnd]}
-          />
-
-          <QuickAction
-            icon="heart"
-            label={t("home_favorites_stat")}
-            onPress={() => navigation.navigate("Tabs", { screen: "Favorites" })}
-            delay={150}
-            gradientColors={["#A770EF", "#CF8BF3"]}
-          />
-        </View>
 
         {/* Trending Section */}
         <View style={styles.sectionHeader}>
@@ -861,17 +772,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
   },
-  statsScroll: {
-    paddingLeft: 20,
-    marginBottom: 20,
-  },
-  quickActionsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 20,
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
+
 
   // Comments
   commentsList: {
