@@ -25,6 +25,7 @@ import { getApiUrl } from "../constants/config";
 import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 import GlobalWrapper from "../components/GlobalWrapper";
+import { setCachedRecipe } from "../utils/recipeCache";
 
 export default function PreviewScreen() {
   const navigation =
@@ -142,6 +143,12 @@ export default function PreviewScreen() {
         "history",
         JSON.stringify([newItem, ...oldHistory])
       );
+
+      // Cache the recipe for faster future access
+      if (normalized.recipe) {
+        await setCachedRecipe(normalized.predicted_food_jp, normalized.recipe);
+        console.log("💾 Recipe cached from AI analysis:", normalized.predicted_food_jp);
+      }
 
       navigation.navigate("Result", {
         result: normalized,

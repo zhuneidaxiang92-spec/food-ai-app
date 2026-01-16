@@ -25,10 +25,11 @@ import { useTheme } from "../context/ThemeContext";
 import { Colors } from "../constants/colors";
 import { useTextSize } from "../context/TextSizeContext";
 import { useLanguage } from "../context/LanguageContext";
+import { getCachedRecipe, setCachedRecipe } from "../utils/recipeCache";
 
 const API_URL = "https://cautiously-mesocratic-albert.ngrok-free.dev";
 
-export default function RecipeScreen({ route }) {
+export default function RecipeScreen({ route }: any) {
   const navigation = useNavigation<any>();
 
   const { isDark } = useTheme();
@@ -86,17 +87,39 @@ export default function RecipeScreen({ route }) {
   }, [recipeFromResult, recipeName]);
 
   // ----------------------------------
-  // Fetch recipe by name
+  // Fetch recipe by name with cache
   // ----------------------------------
   useEffect(() => {
     if (!recipeName || recipeFromResult) return;
 
     const fetchRecipe = async () => {
       try {
+        // 1. Check cache first
+        const cached = await getCachedRecipe(recipeName);
+        if (cached) {
+          console.log("✅ Recipe loaded from cache:", recipeName);
+          setRecipe(normalizeRecipe(cached));
+          setLoading(false);
+          return;
+        }
+
+        // 2. Fetch from API if not cached
+        console.log("🌐 Fetching recipe from API:", recipeName);
         const res = await fetch(`${API_URL}/recipe/${recipeName}`);
         const data = await res.json();
-        setRecipe(data.recipe ? normalizeRecipe(data.recipe) : null);
-      } catch {
+
+        if (data.recipe) {
+          const normalized = normalizeRecipe(data.recipe);
+          setRecipe(normalized);
+
+          // 3. Cache the result
+          await setCachedRecipe(recipeName, data.recipe);
+          console.log("💾 Recipe cached:", recipeName);
+        } else {
+          setRecipe(null);
+        }
+      } catch (error) {
+        console.error("❌ Error fetching recipe:", error);
         setRecipe(null);
       } finally {
         setLoading(false);
@@ -330,6 +353,8 @@ export default function RecipeScreen({ route }) {
         <TypingText
           text={clean(recipe.instructions_jp)}
           textStyle={{ color: theme.text, fontSize }}
+          skipAnimation={true}
+          showSkipButton={false}
         />
 
         {!!recipe.sourceUrl && (

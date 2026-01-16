@@ -22,6 +22,34 @@ export const translations = {
         home_submit: "送信",
         home_like_error: "いいねに失敗しました",
         home_comment_error: "コメント送信に失敗しました",
+        home_view_all: "すべて見る",
+        home_notifications: "通知",
+        home_stats: "統計",
+        home_quick_actions: "クイックアクション",
+        home_trending: "トレンド",
+        home_scan: "スキャン",
+        home_search: "検索",
+        home_post: "投稿",
+        home_favorites_stat: "お気に入り",
+        home_history_stat: "履歴",
+        home_posts_stat: "投稿",
+        notif_no_notifications: "通知はありません",
+        notif_mark_read: "既読にする",
+        notif_delete: "削除",
+        notif_liked_post: "があなたの投稿にいいねしました",
+        notif_commented: "があなたの投稿にコメントしました",
+        notif_system: "システム通知",
+
+        // Time
+        time_just_now: "たった今",
+        time_min_ago: "分前",
+        time_hr_ago: "時間前",
+        time_day_ago: "日前",
+
+        // Reply
+        home_reply_action: "返信する",
+        home_replying_to: "に返信中",
+        home_cancel: "キャンセル",
 
         // Scan / Preview
         scan_title: "食べ物を分析",
@@ -122,6 +150,34 @@ export const translations = {
         home_submit: "Send",
         home_like_error: "Failed to like",
         home_comment_error: "Failed to post comment",
+        home_view_all: "View All",
+        home_notifications: "Notifications",
+        home_stats: "Stats",
+        home_quick_actions: "Quick Actions",
+        home_trending: "Trending",
+        home_scan: "Scan",
+        home_search: "Search",
+        home_post: "Post",
+        home_favorites_stat: "Favorites",
+        home_history_stat: "History",
+        home_posts_stat: "Posts",
+        notif_no_notifications: "No notifications",
+        notif_mark_read: "Mark as read",
+        notif_delete: "Delete",
+        notif_liked_post: "liked your post",
+        notif_commented: "commented on your post",
+        notif_system: "System notification",
+
+        // Time
+        time_just_now: "Just now",
+        time_min_ago: "m ago",
+        time_hr_ago: "h ago",
+        time_day_ago: "d ago",
+
+        // Reply
+        home_reply_action: "Reply",
+        home_replying_to: "Replying to",
+        home_cancel: "Cancel",
 
         // Scan / Preview
         scan_title: "Analyze Food",

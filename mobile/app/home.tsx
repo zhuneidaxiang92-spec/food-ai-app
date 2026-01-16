@@ -24,11 +24,17 @@ import { getApiUrl } from "../constants/config";
 import GlobalWrapper from "../components/GlobalWrapper";
 import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
+import HeroHeader from "../components/HeroHeader";
+import PulseCard from "../components/PulseCard";
+import NotificationCenter, { Notification } from "../components/NotificationCenter";
+import StatsCard from "../components/StatsCard";
+import QuickAction from "../components/QuickAction";
+import TrendingCard from "../components/TrendingCard";
 
 const API_URL = getApiUrl();
 const { width } = Dimensions.get("window");
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({ navigation }: any) {
   const { fontSize } = useTextSize();
   const { t } = useLanguage();
   const { isDark } = useTheme();
@@ -44,10 +50,53 @@ export default function HomeScreen({ navigation }) {
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [commentText, setCommentText] = useState("");
 
+  // 返信機能用
+  const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
+  const [replyToUserName, setReplyToUserName] = useState<string | null>(null);
+  const [postComments, setPostComments] = useState<any[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+
+  // 通知システム
+  const [notificationVisible, setNotificationVisible] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // 統計データ
+  const [stats, setStats] = useState({ favorites: 0, history: 0, posts: 0 });
+
+  // トレンドデータ
+  const [trendingFoods, setTrendingFoods] = useState<any[]>([]);
+
+  // コメントモーダルを閉じる時に返信状態をリセット
+  const closeCommentModal = () => {
+    setCommentVisible(false);
+    setSelectedParentId(null);
+    setReplyToUserName(null);
+    setCommentText("");
+  };
+
   useEffect(() => {
     loadRecommendations();
     loadCommunityFeed();
+    loadNotifications();
+    loadRecommendations();
+    loadCommunityFeed();
+    loadNotifications();
+    loadStats();
+    loadTrending();
   }, []);
+
+  const loadTrending = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/community/trending`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setTrendingFoods(data);
+      }
+    } catch (e) {
+      console.log("ERROR loading trending:", e);
+    }
+  };
 
   const loadRecommendations = async () => {
     try {
@@ -68,12 +117,17 @@ export default function HomeScreen({ navigation }) {
 
   const loadCommunityFeed = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/community/posts`);
+      let url = `${API_URL}/api/community/posts`;
+      const storedUser = await AsyncStorage.getItem("user");
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        url += `?user_id=${user.id}`;
+      }
+
+      const res = await fetch(url);
       const data = await res.json();
       if (Array.isArray(data)) {
         setCommunityPosts(data);
-      } else if (data.posts && Array.isArray(data.posts)) {
-        setCommunityPosts(data.posts);
       } else {
         setCommunityPosts([]);
       }
@@ -84,28 +138,170 @@ export default function HomeScreen({ navigation }) {
     setLoadingCommunity(false);
   };
 
-  const openRecipe = (foodName: string) => {
-    if (!foodName) return;
-    navigation.navigate("Recipe", { recipeName: foodName });
+  const loadComments = async (postId: number) => {
+    setLoadingComments(true);
+    try {
+      const res = await fetch(`${API_URL}/api/community/post/${postId}/comments`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setPostComments(data);
+      }
+    } catch (e) {
+      console.log("Error loading comments:", e);
+    }
+    setLoadingComments(false);
   };
 
-  const likePost = async (postId: number) => {
+  const addToFavorites = async (post: any) => {
+    try {
+      const stored = await AsyncStorage.getItem("favorites");
+      let favorites = stored ? JSON.parse(stored) : [];
+
+      // Check if already exists
+      const exists = favorites.some((f: any) => f.name_jp === post.dish_name);
+      if (!exists) {
+        favorites.push({
+          name_jp: post.dish_name,
+          image: post.dish_image,
+          id: post.id,
+          description: post.opinion // 簡易的な説明として
+        });
+        await AsyncStorage.setItem("favorites", JSON.stringify(favorites));
+        // Stats update
+        loadStats();
+      }
+    } catch (e) {
+      console.log("Error adding to favorites", e);
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return t("time_just_now");
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}${t("time_min_ago")}`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}${t("time_hr_ago")}`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}${t("time_day_ago")}`;
+    return date.toLocaleDateString();
+  };
+
+  const loadNotifications = async () => {
     try {
       const storedUser = await AsyncStorage.getItem("user");
       if (!storedUser) return;
       const user = JSON.parse(storedUser);
 
+      const res = await fetch(`${API_URL}/api/community/notifications/${user.id}`);
+      const data = await res.json();
+
+      if (Array.isArray(data)) {
+        // Map API response to Component format if needed, assuming direct mapping for now
+        // Notification component expects: id, type, userId, userName, message, timestamp, read
+        // API returns: id, user_id, type, title, message, related_id, read, created_at
+        const formatted = data.map((n: any) => ({
+          id: n.id.toString(),
+          type: n.type,
+          userId: 0, // Not needed for display usually
+          userName: "System", // Or fetch sender name
+          message: n.message,
+          timestamp: new Date(n.created_at).getTime(),
+          read: n.read === 1
+        }));
+        setNotifications(formatted);
+        setUnreadCount(formatted.filter((n: any) => !n.read).length);
+      }
+    } catch (e) {
+      console.log("ERROR loading notifications:", e);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      const favs = await AsyncStorage.getItem("favorites");
+      const hist = await AsyncStorage.getItem("history");
+      const posts = await AsyncStorage.getItem("userPosts");
+
+      setStats({
+        favorites: favs ? JSON.parse(favs).length : 0,
+        history: hist ? JSON.parse(hist).length : 0,
+        posts: posts ? JSON.parse(posts).length : 0,
+      });
+    } catch (e) {
+      console.log("ERROR loading stats:", e);
+    }
+  };
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await fetch(`${API_URL}/api/community/notifications/${id}/read`, { method: "POST" });
+
+      const updated = notifications.map((n) =>
+        n.id === id ? { ...n, read: true } : n
+      );
+      setNotifications(updated);
+      setUnreadCount(updated.filter((n) => !n.read).length);
+    } catch (e) {
+      console.log("Error marking as read", e);
+    }
+  };
+
+  const handleDeleteNotification = async (id: string) => {
+    const updated = notifications.filter((n) => n.id !== id);
+    setNotifications(updated);
+    setUnreadCount(updated.filter((n) => !n.read).length);
+    await AsyncStorage.setItem("notifications", JSON.stringify(updated));
+  };
+
+  const openRecipe = (foodName: string) => {
+    if (!foodName) return;
+    navigation.navigate("Recipe", { recipeName: foodName });
+  };
+
+  const likePost = async (postId: number, isLiked: boolean) => {
+    try {
+      const storedUser = await AsyncStorage.getItem("user");
+      if (!storedUser) return;
+      const user = JSON.parse(storedUser);
+
+      // Optimistic update
+      setCommunityPosts(prev => prev.map(p => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            likes: isLiked ? p.likes - 1 : p.likes + 1,
+            is_liked: !isLiked
+          };
+        }
+        return p;
+      }));
+
+      const method = isLiked ? "DELETE" : "POST";
       await fetch(`${API_URL}/api/community/post/${postId}/like?user_id=${user.id}`, {
-        method: "POST",
+        method: method,
       });
 
-      loadCommunityFeed();
+      // いいね！した時に自動でお気に入り追加
+      if (!isLiked) {
+        // Find post data to save
+        const targetPost = communityPosts.find(p => p.id === postId);
+        if (targetPost) {
+          addToFavorites(targetPost);
+        }
+      }
+
+      // No need to reload feed if optimistic update works, but better to sync eventually
+      // loadCommunityFeed(); 
     } catch {
-      Alert.alert("エラー", "いいねに失敗しました");
+      Alert.alert("エラー", "いいねの更新に失敗しました");
+      loadCommunityFeed(); // Revert on error
     }
   };
 
   const submitComment = async () => {
+    if (!commentText.trim()) return;
+
     try {
       const storedUser = await AsyncStorage.getItem("user");
       if (!storedUser || !selectedPostId) return;
@@ -114,13 +310,19 @@ export default function HomeScreen({ navigation }) {
       await fetch(`${API_URL}/api/community/post/${selectedPostId}/comment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: user.id, comment: commentText }),
+        body: JSON.stringify({
+          user_id: user.id,
+          comment: commentText,
+          parent_id: selectedParentId
+        }),
       });
 
       setCommentText("");
-      setSelectedPostId(null);
-      setCommentVisible(false);
-      loadCommunityFeed();
+      setSelectedParentId(null);
+      setReplyToUserName(null);
+      // Don't close modal, just refresh comments
+      loadComments(selectedPostId);
+      loadCommunityFeed(); // Update comment count on feed
     } catch {
       Alert.alert("エラー", "コメント送信に失敗しました");
     }
@@ -142,15 +344,96 @@ export default function HomeScreen({ navigation }) {
         style={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header Section */}
-        <View style={styles.header}>
-          <Text style={[styles.greeting, { color: theme.subtext, fontSize: fontSize }]}>
-            {t("home_welcome")}
-          </Text>
-          <Text style={[styles.title, { color: theme.text, fontSize: fontSize + 10 }]}>
-            {t("home_subtitle")}
+        {/* Hero Header */}
+        <HeroHeader
+          greeting={t("home_welcome")}
+          subtitle={t("home_subtitle")}
+          notificationCount={unreadCount}
+          onNotificationPress={() => setNotificationVisible(true)}
+        />
+
+        {/* Stats Cards Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: theme.text, fontSize: fontSize + 4 }]}>
+            {t("home_stats")}
           </Text>
         </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
+          <StatsCard
+            icon="heart"
+            value={stats.favorites}
+            label={t("home_favorites_stat")}
+            onPress={() => navigation.navigate("Tabs", { screen: "Favorites" })}
+            delay={0}
+            gradientColors={["#FF6B9D", "#FFA06B"]}
+          />
+          <StatsCard
+            icon="time"
+            value={stats.history}
+            label={t("home_history_stat")}
+            onPress={() => navigation.navigate("Tabs", { screen: "History" })}
+            delay={100}
+            gradientColors={["#4ECDC4", "#44A08D"]}
+          />
+          <StatsCard
+            icon="chatbubbles"
+            value={stats.posts}
+            label={t("home_posts_stat")}
+            onPress={() => navigation.navigate("Tabs", { screen: "Home" })}
+            delay={200}
+            gradientColors={["#A770EF", "#CF8BF3"]}
+          />
+        </ScrollView>
+
+        {/* Quick Actions Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: theme.text, fontSize: fontSize + 4 }]}>
+            {t("home_quick_actions")}
+          </Text>
+        </View>
+        <View style={styles.quickActionsGrid}>
+          <QuickAction
+            icon="scan"
+            label={t("home_scan")}
+            onPress={() => navigation.navigate("Tabs", { screen: "Scan" })}
+            delay={0}
+            gradientColors={[theme.gradientStart, theme.gradientEnd]}
+          />
+          <QuickAction
+            icon="search"
+            label={t("home_search")}
+            onPress={() => navigation.navigate("Search")}
+            delay={50}
+            gradientColors={[theme.accentGradientStart, theme.accentGradientEnd]}
+          />
+
+          <QuickAction
+            icon="heart"
+            label={t("home_favorites_stat")}
+            onPress={() => navigation.navigate("Tabs", { screen: "Favorites" })}
+            delay={150}
+            gradientColors={["#A770EF", "#CF8BF3"]}
+          />
+        </View>
+
+        {/* Trending Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: theme.text, fontSize: fontSize + 4 }]}>
+            {t("home_trending")}
+          </Text>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+          {trendingFoods.map((food, index) => (
+            <TrendingCard
+              key={index}
+              rank={index + 1}
+              name={food.name}
+              image={food.image}
+              onPress={() => openRecipe(food.name)}
+              delay={index * 80}
+            />
+          ))}
+        </ScrollView>
 
         {/* Recommendations Section */}
         <View style={styles.sectionHeader}>
@@ -166,36 +449,36 @@ export default function HomeScreen({ navigation }) {
             </Text>
             <AnimatedButton
               title={t("home_search_btn")}
-              onPress={() => navigation.navigate("検索画面")}
+              onPress={() => navigation.navigate("Search")}
               primary={true}
             />
           </GlassCard>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
             {foods.map((item, index) => (
-              <TouchableOpacity
+              <PulseCard
                 key={index}
+                style={styles.card}
+                delay={index * 100}
                 onPress={() => openRecipe(item.name)}
-                activeOpacity={0.9}
+                enablePulse={true}
               >
-                <GlassCard style={styles.card} delay={index * 100}>
-                  {item.image ? (
-                    <Image source={{ uri: item.image }} style={styles.cardImage} />
-                  ) : (
-                    <View style={[styles.placeholder, { backgroundColor: theme.border }]}>
-                      <Ionicons name="restaurant" size={40} color={theme.subtext} />
-                    </View>
-                  )}
-                  <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.8)']}
-                    style={styles.cardOverlay}
-                  >
-                    <Text style={[styles.cardTitle, { fontSize: fontSize + 2 }]}>
-                      {item.name}
-                    </Text>
-                  </LinearGradient>
-                </GlassCard>
-              </TouchableOpacity>
+                {item.image ? (
+                  <Image source={{ uri: item.image }} style={styles.cardImage} />
+                ) : (
+                  <View style={[styles.placeholder, { backgroundColor: theme.border }]}>
+                    <Ionicons name="restaurant" size={40} color={theme.subtext} />
+                  </View>
+                )}
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.8)']}
+                  style={styles.cardOverlay}
+                >
+                  <Text style={[styles.cardTitle, { fontSize: fontSize + 2 }]}>
+                    {item.name}
+                  </Text>
+                </LinearGradient>
+              </PulseCard>
             ))}
           </ScrollView>
         )}
@@ -216,12 +499,6 @@ export default function HomeScreen({ navigation }) {
                 <Text style={[styles.noResults, { fontSize, color: theme.subtext }]}>
                   {t("home_no_posts")}
                 </Text>
-                <TouchableOpacity
-                  style={[styles.primaryBtn, { backgroundColor: theme.secondary }]}
-                  onPress={() => navigation.navigate("投稿画面")}
-                >
-                  <Text style={styles.btnText}>{t("home_first_post")}</Text>
-                </TouchableOpacity>
               </View>
             ) : (
               communityPosts.map((post, index) => (
@@ -236,15 +513,16 @@ export default function HomeScreen({ navigation }) {
                     </View>
                     <View>
                       <Text style={[styles.feedUser, { color: theme.text, fontSize }]}>
-                        User #{post.user_id || "?"}
+                        {post.user_name || `User #${post.user_id}`}
                       </Text>
                       <Text style={[styles.feedTime, { color: theme.subtext, fontSize: fontSize - 2 }]}>
-                        Just now
+                        {formatTimeAgo(post.created_at)}
                       </Text>
                     </View>
                   </View>
 
-                  {post.dish_image && (
+                  {/* Check for valid image url length to avoid empty space for dummy text */}
+                  {post.dish_image && post.dish_image.length > 5 && (
                     <TouchableOpacity onPress={() => openRecipe(post.dish_name)}>
                       <Image source={{ uri: post.dish_image }} style={styles.feedImage} />
                     </TouchableOpacity>
@@ -264,9 +542,13 @@ export default function HomeScreen({ navigation }) {
                   <View style={[styles.feedActions, { borderColor: theme.border }]}>
                     <TouchableOpacity
                       style={styles.actionBtn}
-                      onPress={() => likePost(post.id)}
+                      onPress={() => likePost(post.id, post.is_liked)}
                     >
-                      <Ionicons name="heart-outline" size={20} color={theme.text} />
+                      <Ionicons
+                        name={post.is_liked ? "heart" : "heart-outline"}
+                        size={20}
+                        color={post.is_liked ? "#FF6B9D" : theme.primary}
+                      />
                       <Text style={[styles.actionText, { color: theme.text }]}>{post.likes ?? 0}</Text>
                     </TouchableOpacity>
 
@@ -274,10 +556,12 @@ export default function HomeScreen({ navigation }) {
                       style={styles.actionBtn}
                       onPress={() => {
                         setSelectedPostId(post.id);
+                        setPostComments([]);
+                        loadComments(post.id);
                         setCommentVisible(true);
                       }}
                     >
-                      <Ionicons name="chatbubble-outline" size={20} color={theme.text} />
+                      <Ionicons name="chatbubble-outline" size={20} color={theme.primary} />
                       <Text style={[styles.actionText, { color: theme.text }]}>{post.comments ?? 0}</Text>
                     </TouchableOpacity>
 
@@ -285,7 +569,7 @@ export default function HomeScreen({ navigation }) {
                       style={styles.actionBtn}
                       onPress={() => openRecipe(post.dish_name)}
                     >
-                      <Ionicons name="restaurant-outline" size={20} color={theme.text} />
+                      <Ionicons name="restaurant-outline" size={20} color={theme.primary} />
                       <Text style={[styles.actionText, { color: theme.text }]}>{t("result_view_recipe")}</Text>
                     </TouchableOpacity>
                   </View>
@@ -296,22 +580,86 @@ export default function HomeScreen({ navigation }) {
         )}
 
         {/* Comment Modal */}
-        <Modal visible={commentVisible} transparent animationType="slide">
+        <Modal visible={commentVisible} transparent animationType="slide" onRequestClose={closeCommentModal}>
           <View style={styles.modalOverlay}>
             <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: theme.text, fontSize: fontSize + 2 }]}>
                   {t("home_write_comment")}
                 </Text>
-                <TouchableOpacity onPress={() => setCommentVisible(false)}>
+                <TouchableOpacity onPress={closeCommentModal}>
                   <Ionicons name="close" size={24} color={theme.subtext} />
                 </TouchableOpacity>
               </View>
 
+              <ScrollView style={styles.commentsList}>
+                {loadingComments ? (
+                  <ActivityIndicator color={theme.primary} />
+                ) : postComments.length === 0 ? (
+                  <Text style={[styles.noComments, { color: theme.subtext }]}>
+                    No comments yet. Be the first!
+                  </Text>
+                ) : (
+                  postComments.map((comment, idx) => (
+                    <View
+                      key={idx}
+                      style={[
+                        styles.commentItem,
+                        { borderBottomColor: theme.border },
+                        comment.parent_id ? { marginLeft: 24, paddingLeft: 12 } : {}
+                      ]}
+                    >
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+                        <Text style={[styles.commentUser, { color: theme.text, marginBottom: 0 }]}>
+                          {comment.user_name}
+                          <Text style={[styles.commentTime, { color: theme.subtext }]}>・{formatTimeAgo(comment.created_at)}</Text>
+                        </Text>
+
+                        {/* Reply Button (Icon) */}
+                        <TouchableOpacity
+                          style={{ padding: 4 }}
+                          onPress={() => {
+                            setSelectedParentId(comment.id);
+                            setReplyToUserName(comment.user_name);
+                          }}
+                        >
+                          <Ionicons name="arrow-undo-outline" size={16} color={theme.subtext} />
+                        </TouchableOpacity>
+                      </View>
+
+                      <Text style={[styles.commentText, { color: theme.text }]}>{comment.comment}</Text>
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+
+              {/* Reply Target Display */}
+              {replyToUserName && (
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: 8,
+                  backgroundColor: theme.background, // or theme.canvas
+                  paddingVertical: 6,
+                  paddingHorizontal: 12,
+                  borderRadius: 16,
+                  alignSelf: 'flex-start',
+                  borderWidth: 1,
+                  borderColor: theme.border
+                }}>
+                  <Text style={{ color: theme.subtext, fontSize: 12, marginRight: 8 }}>
+                    <Text style={{ fontWeight: 'bold', color: theme.text }}>@{replyToUserName}</Text> {t("home_replying_to")}
+                  </Text>
+                  <TouchableOpacity onPress={() => { setSelectedParentId(null); setReplyToUserName(null); }}>
+                    <Ionicons name="close-circle" size={18} color={theme.subtext} />
+                  </TouchableOpacity>
+                </View>
+              )}
+
               <TextInput
                 value={commentText}
                 onChangeText={setCommentText}
-                placeholder={t("home_comment_placeholder")}
+                placeholder={replyToUserName ? "返信を入力..." : t("home_comment_placeholder")}
                 placeholderTextColor={theme.subtext}
                 style={[
                   styles.input,
@@ -332,7 +680,16 @@ export default function HomeScreen({ navigation }) {
 
         <View style={{ height: 100 }} />
       </ScrollView>
-    </GlobalWrapper>
+
+      {/* Notification Center */}
+      <NotificationCenter
+        visible={notificationVisible}
+        onClose={() => setNotificationVisible(false)}
+        notifications={notifications}
+        onMarkAsRead={handleMarkAsRead}
+        onDelete={handleDeleteNotification}
+      />
+    </GlobalWrapper >
   );
 }
 
@@ -503,5 +860,44 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignItems: "center",
+  },
+  statsScroll: {
+    paddingLeft: 20,
+    marginBottom: 20,
+  },
+  quickActionsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 20,
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+
+  // Comments
+  commentsList: {
+    maxHeight: 300,
+    marginBottom: 15,
+  },
+  noComments: {
+    textAlign: "center",
+    padding: 20,
+    fontStyle: "italic",
+  },
+  commentItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  commentUser: {
+    fontWeight: "bold",
+    marginBottom: 4,
+    fontSize: 14,
+  },
+  commentTime: {
+    fontWeight: "normal",
+    fontSize: 12,
+  },
+  commentText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

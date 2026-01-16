@@ -10,6 +10,8 @@ import RecipeScreen from "../app/recipe";
 // ⭐ Signup onboarding screens
 import SignupCategoryScreen from "../app/auth/SignupCategoryScreen";
 import SignupFoodScreen from "../app/auth/SignupFoodScreen";
+import AddPost from "../app/community/AddPost";
+import SearchScreen from "../app/SearchScreen";
 
 export type RootStackParamList = {
   Login: undefined;
@@ -19,6 +21,8 @@ export type RootStackParamList = {
   Tabs: undefined;
   Result: { result: any; fallbackImage: any };
   Recipe: { recipe: any; recipeName?: string };
+  Search: undefined;
+  AddPost: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -49,6 +53,14 @@ export default function AppNavigator() {
       {/* DETAIL SCREENS (Pushed on stack) */}
       <Stack.Screen name="Result" component={ResultScreen} />
       <Stack.Screen name="Recipe" component={RecipeScreen} />
+      <Stack.Screen name="Search" component={SearchScreen} />
+
+      {/* POST MODAL */}
+      <Stack.Screen
+        name="AddPost"
+        component={AddPost}
+        options={{ presentation: "modal" }} // Show as modal
+      />
     </Stack.Navigator>
   );
 }
