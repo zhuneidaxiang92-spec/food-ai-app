@@ -73,9 +73,9 @@ export default function TrendingCard({
 
 const styles = StyleSheet.create({
     card: {
-        width: width * 0.4,
-        height: 180,
-        marginRight: 12,
+        width: width * 0.35,
+        height: 150,
+        marginRight: 10,
         overflow: "hidden",
     },
     image: {
@@ -94,16 +94,16 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        padding: 12,
-        paddingTop: 40,
+        padding: 10,
+        paddingTop: 35,
     },
     rankBadge: {
         position: "absolute",
-        top: 12,
-        left: 12,
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        top: 10,
+        left: 10,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         overflow: "hidden",
     },
     rankGradient: {
@@ -114,19 +114,19 @@ const styles = StyleSheet.create({
     rankText: {
         color: "#fff",
         fontWeight: "bold",
-        fontSize: 14,
+        fontSize: 13,
     },
     trendingIcon: {
         position: "absolute",
-        top: 12,
-        right: 12,
+        top: 10,
+        right: 10,
     },
     fireEmoji: {
-        fontSize: 24,
+        fontSize: 20,
     },
     name: {
         color: "#fff",
         fontWeight: "bold",
-        lineHeight: 20,
+        lineHeight: 18,
     },
 });

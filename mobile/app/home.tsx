@@ -378,53 +378,23 @@ export default function HomeScreen({ navigation }: any) {
           ))}
         </ScrollView>
 
-        {/* Recommendations Section */}
+        {/* Search Section */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text, fontSize: fontSize + 4 }]}>
-            {t("home_featured")}
+            レシピを探す
           </Text>
         </View>
-
-        {foods.length === 0 ? (
-          <GlassCard style={styles.emptyBox}>
-            <Text style={[styles.noResults, { fontSize, color: theme.subtext }]}>
-              {t("home_no_recs")}
-            </Text>
+        <View style={styles.searchSection}>
+          <View style={styles.compactSearchCard}>
             <AnimatedButton
-              title={t("home_search_btn")}
+              title="検索する"
               onPress={() => navigation.navigate("Search")}
+              icon="search-outline"
               primary={true}
             />
-          </GlassCard>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-            {foods.map((item, index) => (
-              <PulseCard
-                key={index}
-                style={styles.card}
-                delay={index * 100}
-                onPress={() => openRecipe(item.name)}
-                enablePulse={true}
-              >
-                {item.image ? (
-                  <Image source={{ uri: item.image }} style={styles.cardImage} />
-                ) : (
-                  <View style={[styles.placeholder, { backgroundColor: theme.border }]}>
-                    <Ionicons name="restaurant" size={40} color={theme.subtext} />
-                  </View>
-                )}
-                <LinearGradient
-                  colors={['transparent', 'rgba(0,0,0,0.8)']}
-                  style={styles.cardOverlay}
-                >
-                  <Text style={[styles.cardTitle, { fontSize: fontSize + 2 }]}>
-                    {item.name}
-                  </Text>
-                </LinearGradient>
-              </PulseCard>
-            ))}
-          </ScrollView>
-        )}
+          </View>
+        </View>
+
 
         {/* Community Feed */}
         <View style={styles.sectionHeader}>
@@ -438,11 +408,12 @@ export default function HomeScreen({ navigation }: any) {
         ) : (
           <View>
             {communityPosts.length === 0 ? (
-              <View style={[styles.emptyBox, { borderColor: theme.border }]}>
-                <Text style={[styles.noResults, { fontSize, color: theme.subtext }]}>
+              <GlassCard style={styles.emptyBox}>
+                <Ionicons name="people-outline" size={48} color={theme.primary} />
+                <Text style={[styles.noResults, { fontSize: fontSize + 1, color: theme.text, fontWeight: "600" }]}>
                   {t("home_no_posts")}
                 </Text>
-              </View>
+              </GlassCard>
             ) : (
               communityPosts.map((post, index) => (
                 <GlassCard
@@ -654,8 +625,11 @@ const styles = StyleSheet.create({
 
   sectionHeader: {
     paddingHorizontal: 20,
-    marginTop: 10,
-    marginBottom: 15,
+    marginTop: 24,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   sectionTitle: {
     fontWeight: "bold",
@@ -663,13 +637,13 @@ const styles = StyleSheet.create({
 
   horizontalScroll: {
     paddingLeft: 20,
-    marginBottom: 20,
+    marginBottom: 16,
   },
 
   card: {
-    width: width * 0.7,
-    height: 220,
-    marginRight: 15,
+    width: width * 0.65,
+    height: 200,
+    marginRight: 12,
     overflow: "hidden",
   },
   cardImage: {
@@ -689,8 +663,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 15,
-    paddingTop: 40,
+    padding: 12,
+    paddingTop: 35,
   },
   cardTitle: {
     color: "#fff",
@@ -698,29 +672,33 @@ const styles = StyleSheet.create({
   },
 
   emptyBox: {
-    margin: 20,
-    padding: 30,
+    marginHorizontal: 20,
+    marginVertical: 8,
+    paddingVertical: 40,
+    paddingHorizontal: 24,
     alignItems: "center",
   },
   noResults: {
-    marginBottom: 15,
+    marginTop: 12,
+    marginBottom: 20,
     textAlign: "center",
+    lineHeight: 22,
   },
 
   // Feed Styles
   feedCard: {
     marginHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   feedHeader: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
+    padding: 10,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
@@ -733,14 +711,14 @@ const styles = StyleSheet.create({
   },
   feedImage: {
     width: "100%",
-    height: 250,
+    height: 200,
   },
   feedContent: {
-    padding: 12,
+    padding: 10,
   },
   feedTitle: {
     fontWeight: "bold",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   feedText: {
     lineHeight: 20,
@@ -748,7 +726,7 @@ const styles = StyleSheet.create({
   feedActions: {
     flexDirection: "row",
     borderTopWidth: 1,
-    padding: 10,
+    padding: 8,
   },
   actionBtn: {
     flexDirection: "row",
@@ -832,5 +810,33 @@ const styles = StyleSheet.create({
   commentText: {
     fontSize: 14,
     lineHeight: 20,
+  },
+
+  // Search Section
+  searchSection: {
+    marginBottom: 8,
+  },
+  compactSearchCard: {
+    marginHorizontal: 20,
+  },
+  searchCard: {
+    marginHorizontal: 20,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    alignItems: "center",
+  },
+  searchTitle: {
+    fontWeight: "bold",
+    marginTop: 12,
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  searchSubtitle: {
+    textAlign: "center",
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  searchButtonContainer: {
+    width: "100%",
   },
 });

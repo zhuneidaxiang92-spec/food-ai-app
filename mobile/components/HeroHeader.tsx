@@ -130,7 +130,7 @@ export default function HeroHeader({
                 <Text
                     style={[
                         styles.subtitle,
-                        { color: theme.text, fontSize: fontSize + 8 },
+                        { color: theme.text, fontSize: fontSize + 6 },
                     ]}
                 >
                     {subtitle}
@@ -150,22 +150,22 @@ export default function HeroHeader({
 
 const styles = StyleSheet.create({
     container: {
-        paddingTop: 60,
+        paddingTop: 50,
         paddingHorizontal: 20,
-        paddingBottom: 24,
-        borderBottomLeftRadius: 30,
-        borderBottomRightRadius: 30,
+        paddingBottom: 20,
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
     },
     topRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 16,
+        marginBottom: 12,
     },
     avatar: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         justifyContent: "center",
         alignItems: "center",
         shadowColor: "#000",
@@ -175,15 +175,15 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     avatarImage: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         borderWidth: 2,
         borderColor: "#fff",
     },
     avatarText: {
         color: "#fff",
-        fontSize: 22,
+        fontSize: 18,
         fontWeight: "bold",
     },
     notificationButton: {
@@ -209,16 +209,16 @@ const styles = StyleSheet.create({
     },
     greeting: {
         fontWeight: "600",
-        marginBottom: 4,
+        marginBottom: 2,
     },
     subtitle: {
         fontWeight: "800",
-        lineHeight: 32,
+        lineHeight: 28,
     },
     decorativeLine: {
-        height: 4,
+        height: 3,
         borderRadius: 2,
-        marginTop: 16,
-        width: "40%",
+        marginTop: 12,
+        width: "30%",
     },
 });
