@@ -62,6 +62,9 @@ export default function HomeScreen({ navigation }: any) {
   // トレンドデータ
   const [trendingFoods, setTrendingFoods] = useState<any[]>([]);
 
+  // プロフィール画像
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+
   // コメントモーダルを閉じる時に返信状態をリセット
   const closeCommentModal = () => {
     setCommentVisible(false);
@@ -75,7 +78,16 @@ export default function HomeScreen({ navigation }: any) {
     loadCommunityFeed();
     loadNotifications();
     loadTrending();
+    loadProfileImage();
   }, []);
+
+  // 画面にフォーカスした時にプロフィール画像を再読み込み
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadProfileImage();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const loadTrending = async () => {
     try {
@@ -86,6 +98,25 @@ export default function HomeScreen({ navigation }: any) {
       }
     } catch (e) {
       console.log("ERROR loading trending:", e);
+    }
+  };
+
+  // プロフィール画像を取得
+  const loadProfileImage = async () => {
+    try {
+      const storedUser = await AsyncStorage.getItem("user");
+      if (!storedUser) return;
+
+      const user = JSON.parse(storedUser);
+      const res = await fetch(`${API_URL}/api/users/${user.id}`);
+      if (!res.ok) return;
+
+      const data = await res.json();
+      if (data.profile_image) {
+        setProfileImageUrl(`${API_URL}${data.profile_image}`);
+      }
+    } catch (e) {
+      console.log("Error loading profile image:", e);
     }
   };
 
@@ -325,6 +356,7 @@ export default function HomeScreen({ navigation }: any) {
           subtitle={t("home_subtitle")}
           notificationCount={unreadCount}
           onNotificationPress={() => setNotificationVisible(true)}
+          profileImageUrl={profileImageUrl}
         />
 
         {/* Trending Section */}

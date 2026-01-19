@@ -20,10 +20,11 @@ print("MYSQL_HOST =", os.getenv("MYSQL_HOST"))
 # ==============================================
 from fastapi import FastAPI, File, UploadFile, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from . import models
 from . import database
-from .routers import auth, auth_google, posts, community
+from .routers import auth, auth_google, posts, community, users
 
 import requests
 from PIL import Image
@@ -96,6 +97,10 @@ app.include_router(posts.router)
 app.include_router(auth.router)
 app.include_router(auth_google.router)
 app.include_router(community.router)
+app.include_router(users.router)
+
+# Mount static files for uploaded images
+app.mount("/uploads", StaticFiles(directory="backend/uploads"), name="uploads")
 
 
 # ==============================================

@@ -15,6 +15,7 @@ interface AnimatedButtonProps {
     onPress: () => void;
     icon?: keyof typeof Ionicons.glyphMap;
     primary?: boolean;
+    disabled?: boolean;
 }
 
 export default function AnimatedButton({
@@ -22,6 +23,7 @@ export default function AnimatedButton({
     onPress,
     icon,
     primary = true,
+    disabled = false,
 }: AnimatedButtonProps) {
     const { isDark } = useTheme();
     const theme = isDark ? Colors.dark : Colors.light;
@@ -33,17 +35,19 @@ export default function AnimatedButton({
     }));
 
     const handlePressIn = () => {
+        if (disabled) return;
         scale.value = withSpring(0.95);
     };
 
     const handlePressOut = () => {
+        if (disabled) return;
         scale.value = withSpring(1);
         onPress();
     };
 
     return (
-        <Animated.View style={[styles.container, animatedStyle]}>
-            <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut}>
+        <Animated.View style={[styles.container, animatedStyle, disabled && { opacity: 0.5 }]}>
+            <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut} disabled={disabled}>
                 <LinearGradient
                     colors={
                         primary

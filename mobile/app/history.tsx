@@ -7,6 +7,10 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Swipeable, GestureHandlerRootView } from "react-native-gesture-handler";
@@ -23,11 +27,14 @@ import { useLanguage } from "../context/LanguageContext";
 export default function HistoryScreen() {
   const navigation = useNavigation<any>();
   const [history, setHistory] = useState<any[]>([]);
+  const [noteModalVisible, setNoteModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [noteText, setNoteText] = useState("");
 
   const { isDark } = useTheme();
   const theme = isDark ? Colors.dark : Colors.light;
 
-  const { fontSize } = useTextSize(); // ← TEXT SIZE
+  const { fontSize } = useTextSize();
   const { t } = useLanguage();
 
   const loadHistory = async () => {
@@ -58,6 +65,26 @@ export default function HistoryScreen() {
         },
       },
     ]);
+  };
+
+  const openNoteModal = (item: any) => {
+    setSelectedItem(item);
+    setNoteText(item.note || "");
+    setNoteModalVisible(true);
+  };
+
+  const saveNote = async () => {
+    if (!selectedItem) return;
+
+    const updated = history.map((item) =>
+      item.name === selectedItem.name ? { ...item, note: noteText } : item
+    );
+
+    await AsyncStorage.setItem("history", JSON.stringify(updated));
+    setHistory(updated);
+    setNoteModalVisible(false);
+    setSelectedItem(null);
+    setNoteText("");
   };
 
   const renderRightActions = (name: string) => (
@@ -144,37 +171,133 @@ export default function HistoryScreen() {
                     >
                       {item.name}
                     </Text>
+
+                    {/* Show note preview if exists */}
+                    {item.note && (
+                      <View style={styles.notePreview}>
+                        <Ionicons name="document-text" size={14} color={theme.primary} />
+                        <Text
+                          style={[styles.notePreviewText, { color: theme.subtext, fontSize: fontSize - 2 }]}
+                          numberOfLines={1}
+                        >
+                          {item.note}
+                        </Text>
+                      </View>
+                    )}
                   </View>
 
-                  {/* Detail Button */}
-                  <LinearGradient
-                    colors={["#FF7F50", "#FF6347"]}
-                    style={styles.detailBtn}
-                  >
+                  {/* Action Buttons */}
+                  <View style={styles.actionButtons}>
+                    {/* Note Button */}
                     <TouchableOpacity
-                      onPress={() =>
-                        navigation.navigate("Recipe", {
-                          recipe: item.recipe || null, // ✅ Pass cached recipe if available
-                          recipeName: item.name_en || item.name, // Fallback
-                        })
-                      }
+                      style={[styles.noteBtn, { backgroundColor: item.note ? theme.primary : theme.border }]}
+                      onPress={() => openNoteModal(item)}
                     >
-                      <Ionicons name="arrow-forward" size={22} color="#fff" />
+                      <Ionicons
+                        name={item.note ? "document-text" : "document-text-outline"}
+                        size={20}
+                        color={item.note ? "#fff" : theme.subtext}
+                      />
                     </TouchableOpacity>
-                  </LinearGradient>
+
+                    {/* Recipe Button */}
+                    <LinearGradient
+                      colors={["#FF7F50", "#FF6347"]}
+                      style={styles.detailBtn}
+                    >
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate("Recipe", {
+                            recipe: item.recipe || null,
+                            recipeName: item.name_en || item.name,
+                          })
+                        }
+                      >
+                        <Ionicons name="arrow-forward" size={22} color="#fff" />
+                      </TouchableOpacity>
+                    </LinearGradient>
+                  </View>
                 </View>
               </Swipeable>
             ))}
           </ScrollView>
         )}
+
+        {/* Note Modal */}
+        <Modal
+          visible={noteModalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setNoteModalVisible(false)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.modalOverlay}
+          >
+            <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: theme.text, fontSize: fontSize + 2 }]}>
+                  {t("hist_note_title")}
+                </Text>
+                <TouchableOpacity onPress={() => setNoteModalVisible(false)}>
+                  <Ionicons name="close" size={24} color={theme.subtext} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                style={styles.modalScrollView}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <Text style={[styles.modalRecipeName, { color: theme.text, fontSize }]}>
+                  {selectedItem?.name}
+                </Text>
+
+                <TextInput
+                  value={noteText}
+                  onChangeText={setNoteText}
+                  placeholder={t("hist_note_placeholder")}
+                  placeholderTextColor={theme.subtext}
+                  style={[
+                    styles.noteInput,
+                    {
+                      color: theme.text,
+                      borderColor: theme.border,
+                      backgroundColor: theme.background
+                    },
+                  ]}
+                  multiline
+                  numberOfLines={6}
+                  autoFocus
+                  textAlignVertical="top"
+                />
+              </ScrollView>
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.cancelBtn, { borderColor: theme.border }]}
+                  onPress={() => setNoteModalVisible(false)}
+                >
+                  <Text style={[styles.cancelBtnText, { color: theme.text }]}>
+                    {t("hist_note_cancel")}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.saveBtn, { backgroundColor: theme.primary }]}
+                  onPress={saveNote}
+                >
+                  <Text style={styles.saveBtnText}>{t("hist_note_save")}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
       </View>
     </GestureHandlerRootView>
   );
 }
 
-//
-// Styles
-//
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
 
@@ -208,7 +331,30 @@ const styles = StyleSheet.create({
   info: { flex: 1, marginLeft: 12 },
 
   date: {},
-  name: { fontWeight: "bold" },
+  name: { fontWeight: "bold", marginBottom: 4 },
+
+  notePreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    gap: 4,
+  },
+  notePreviewText: {
+    flex: 1,
+    fontStyle: "italic",
+  },
+
+  actionButtons: {
+    flexDirection: "row",
+    gap: 8,
+  },
+
+  noteBtn: {
+    padding: 10,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
   deleteSwipe: {
     width: 80,
@@ -222,5 +368,63 @@ const styles = StyleSheet.create({
   detailBtn: {
     padding: 10,
     borderRadius: 12,
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    minHeight: 400,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontWeight: "bold",
+  },
+  modalRecipeName: {
+    fontWeight: "600",
+    marginBottom: 16,
+  },
+  modalScrollView: {
+    maxHeight: 300,
+  },
+  noteInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    minHeight: 150,
+    textAlignVertical: "top",
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  modalBtn: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  cancelBtn: {
+    borderWidth: 1,
+  },
+  cancelBtnText: {
+    fontWeight: "600",
+  },
+  saveBtn: {},
+  saveBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
 });

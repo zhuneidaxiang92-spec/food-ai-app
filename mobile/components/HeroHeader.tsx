@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
@@ -19,6 +19,7 @@ interface HeroHeaderProps {
     subtitle: string;
     notificationCount?: number;
     onNotificationPress?: () => void;
+    profileImageUrl?: string | null;
 }
 
 export default function HeroHeader({
@@ -27,6 +28,7 @@ export default function HeroHeader({
     subtitle,
     notificationCount = 0,
     onNotificationPress,
+    profileImageUrl,
 }: HeroHeaderProps) {
     const { isDark } = useTheme();
     const { fontSize } = useTextSize();
@@ -79,11 +81,18 @@ export default function HeroHeader({
         >
             <View style={styles.topRow}>
                 {/* アバター */}
-                <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-                    <Text style={styles.avatarText}>
-                        {userName.charAt(0).toUpperCase()}
-                    </Text>
-                </View>
+                {profileImageUrl ? (
+                    <Image
+                        source={{ uri: profileImageUrl }}
+                        style={styles.avatarImage}
+                    />
+                ) : (
+                    <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+                        <Text style={styles.avatarText}>
+                            {userName.charAt(0).toUpperCase()}
+                        </Text>
+                    </View>
+                )}
 
                 {/* 通知ベル */}
                 <TouchableOpacity
@@ -164,6 +173,13 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 4,
         elevation: 4,
+    },
+    avatarImage: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        borderWidth: 2,
+        borderColor: "#fff",
     },
     avatarText: {
         color: "#fff",

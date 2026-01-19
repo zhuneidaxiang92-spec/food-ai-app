@@ -13,6 +13,8 @@ import {
   Modal,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import * as Speech from "expo-speech";
 import { useNavigation } from "@react-navigation/native";
@@ -371,42 +373,72 @@ export default function RecipeScreen({ route }: any) {
           Share Modal
       ====================== */}
       <Modal visible={shareVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
           <View
             style={[
               styles.modalContent,
               { backgroundColor: theme.card },
             ]}
           >
-            <Text style={{ fontSize: fontSize + 2, marginBottom: 12 }}>
-              {t("recipe_share_title")}
-            </Text>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text, fontSize: fontSize + 2 }]}>
+                {t("recipe_share_title")}
+              </Text>
+              <TouchableOpacity onPress={() => setShareVisible(false)}>
+                <Ionicons name="close" size={24} color={theme.subtext} />
+              </TouchableOpacity>
+            </View>
 
-            <TextInput
-              placeholder={t("recipe_share_placeholder")}
-              placeholderTextColor="#999"
-              value={opinion}
-              onChangeText={setOpinion}
-              style={[
-                styles.input,
-                { color: theme.text, borderColor: theme.border },
-              ]}
-              multiline
-            />
+            <ScrollView
+              style={styles.modalScrollView}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={[styles.modalRecipeName, { color: theme.text, fontSize }]}>
+                {recipe.name_jp}
+              </Text>
+
+              <TextInput
+                placeholder={t("recipe_share_placeholder")}
+                placeholderTextColor={theme.subtext}
+                value={opinion}
+                onChangeText={setOpinion}
+                style={[
+                  styles.input,
+                  { color: theme.text, borderColor: theme.border, backgroundColor: theme.background },
+                ]}
+                multiline
+                numberOfLines={4}
+                autoFocus
+                textAlignVertical="top"
+              />
+            </ScrollView>
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity onPress={() => setShareVisible(false)}>
-                <Text style={{ color: "gray" }}>{t("recipe_cancel")}</Text>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.cancelBtn, { borderColor: theme.border }]}
+                onPress={() => setShareVisible(false)}
+              >
+                <Text style={[styles.cancelBtnText, { color: theme.text }]}>
+                  {t("recipe_cancel")}
+                </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={submitShare} disabled={sharing}>
-                <Text style={{ color: "#FF7043", fontWeight: "bold" }}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.postBtn, { backgroundColor: theme.primary }]}
+                onPress={submitShare}
+                disabled={sharing}
+              >
+                <Text style={styles.postBtnText}>
                   {sharing ? t("recipe_posting") : t("recipe_post")}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </GlobalWrapper>
   );
@@ -463,7 +495,40 @@ const styles = StyleSheet.create({
   },
   modalButtons: {
     flexDirection: "row",
+    gap: 12,
+  },
+  modalHeader: {
+    flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontWeight: "bold",
+  },
+  modalScrollView: {
+    maxHeight: 200,
+  },
+  modalRecipeName: {
+    fontWeight: "600",
+    marginBottom: 16,
+  },
+  modalBtn: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  cancelBtn: {
+    borderWidth: 1,
+  },
+  cancelBtnText: {
+    fontWeight: "600",
+  },
+  postBtn: {},
+  postBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
   backButton: {
     position: "absolute",

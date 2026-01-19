@@ -17,6 +17,9 @@ import { useTextSize } from "../context/TextSizeContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 import { Colors } from "../constants/colors";
+import GlobalWrapper from "../components/GlobalWrapper";
+import GlassCard from "../components/GlassCard";
+import AnimatedButton from "../components/AnimatedButton";
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
@@ -35,235 +38,287 @@ export default function SettingsScreen() {
   // 🔐 LOGOUT FUNCTION
   // =========================
   const handleLogout = async () => {
-    try {
-      await AsyncStorage.multiRemove([
-        "access_token",
-        "user",
-      ]);
+    Alert.alert(
+      t("settings_logout"),
+      "本当にログアウトしますか?",
+      [
+        { text: t("profile_cancel"), style: "cancel" },
+        {
+          text: t("settings_logout"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await AsyncStorage.multiRemove([
+                "access_token",
+                "user",
+              ]);
 
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Login" }],
-      });
-    } catch (error) {
-      Alert.alert("エラー", "ログアウトに失敗しました");
-    }
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Login" }],
+              });
+            } catch (error) {
+              Alert.alert("エラー", "ログアウトに失敗しました");
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.background }]}
-    >
-      {/* Header */}
-      <Text
-        style={[
-          styles.header,
-          { color: theme.text, fontSize: fontSize + 4 },
-        ]}
+    <GlobalWrapper>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
       >
-        {t("settings_title")}
-      </Text>
-
-      {/* Profile Section */}
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: theme.card, borderColor: theme.border },
-        ]}
-      >
-        <Text
-          style={[
-            styles.cardTitle,
-            { color: theme.text, fontSize: fontSize + 2 },
-          ]}
-        >
-          {t("settings_profile")}
-        </Text>
-
-        <TouchableOpacity
-          style={styles.row}
-          onPress={() => navigation.navigate("Profile")}
-        >
-          <Ionicons name="person-circle-outline" size={28} color="#007AFF" />
-          <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-            {t("settings_edit_profile")}
+        {/* Header */}
+        <View style={styles.header}>
+          <Text
+            style={[
+              styles.headerTitle,
+              { color: theme.text, fontSize: fontSize + 6 },
+            ]}
+          >
+            {t("settings_title")}
           </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* APP SETTINGS */}
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: theme.card, borderColor: theme.border },
-        ]}
-      >
-        <Text
-          style={[
-            styles.cardTitle,
-            { color: theme.text, fontSize: fontSize + 2 },
-          ]}
-        >
-          {t("settings_app")}
-        </Text>
-
-        {/* Language */}
-        <TouchableOpacity
-          style={styles.row}
-          onPress={toggleLanguage}
-        >
-          <Ionicons name="language-outline" size={26} color="#007AFF" />
-          <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-            {t("settings_language")}
+          <Text style={[styles.headerSubtitle, { color: theme.subtext, fontSize }]}>
+            アプリの設定をカスタマイズ
           </Text>
-          <Text style={{ marginLeft: "auto", color: theme.subtext }}>
-            {language === "ja" ? "日本語" : "English"}
-          </Text>
-        </TouchableOpacity>
+        </View>
 
-        {/* TEXT SIZE */}
-        <View style={styles.row}>
-          <Ionicons name="text-outline" size={26} color="#007AFF" />
-          <View style={{ flex: 1, marginLeft: 12 }}>
+        {/* Profile Section */}
+        <GlassCard style={styles.section} delay={0}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: theme.text, fontSize: fontSize + 2 },
+            ]}
+          >
+            {t("settings_profile")}
+          </Text>
+
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => navigation.navigate("Profile")}
+          >
+            <View style={styles.rowIcon}>
+              <Ionicons name="person-circle-outline" size={28} color={theme.primary} />
+            </View>
             <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-              {t("settings_text_size")}
+              {t("settings_edit_profile")}
             </Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.subtext} />
+          </TouchableOpacity>
+        </GlassCard>
 
-            <Slider
-              style={{ width: "100%", height: 40 }}
-              minimumValue={12}
-              maximumValue={28}
-              step={1}
-              value={fontSize}
-              onValueChange={(val) => setFontSize(val)}
-              minimumTrackTintColor="#007AFF"
-              maximumTrackTintColor="#ccc"
-            />
+        {/* APP SETTINGS */}
+        <GlassCard style={styles.section} delay={100}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: theme.text, fontSize: fontSize + 2 },
+            ]}
+          >
+            {t("settings_app")}
+          </Text>
 
+          {/* Language */}
+          <TouchableOpacity
+            style={styles.row}
+            onPress={toggleLanguage}
+          >
+            <View style={styles.rowIcon}>
+              <Ionicons name="language-outline" size={26} color={theme.primary} />
+            </View>
             <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-              {t("settings_current_size")}: {fontSize}
+              {t("settings_language")}
             </Text>
+            <Text style={[styles.rowValue, { color: theme.subtext }]}>
+              {language === "ja" ? "日本語" : "English"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* TEXT SIZE */}
+          <View style={[styles.row, styles.sliderRow]}>
+            <View style={styles.rowIcon}>
+              <Ionicons name="text-outline" size={26} color={theme.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.sliderHeader}>
+                <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+                  {t("settings_text_size")}
+                </Text>
+                <Text style={[styles.rowValue, { color: theme.subtext }]}>
+                  {fontSize}
+                </Text>
+              </View>
+
+              <Slider
+                style={{ width: "100%", height: 40 }}
+                minimumValue={12}
+                maximumValue={28}
+                step={1}
+                value={fontSize}
+                onValueChange={(val) => setFontSize(val)}
+                minimumTrackTintColor={theme.primary}
+                maximumTrackTintColor={theme.border}
+              />
+            </View>
           </View>
-        </View>
 
-        {/* DARK MODE */}
-        <View style={styles.row}>
-          <Ionicons
-            name={isDark ? "moon" : "sunny"}
-            size={26}
-            color={isDark ? "#FFD700" : "#FF9500"}
-          />
+          {/* DARK MODE */}
+          <View style={styles.row}>
+            <View style={styles.rowIcon}>
+              <Ionicons
+                name={isDark ? "moon" : "sunny"}
+                size={26}
+                color={isDark ? "#FFD700" : "#FF9500"}
+              />
+            </View>
 
-          <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-            {t("settings_dark_mode")}
+            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+              {t("settings_dark_mode")}
+            </Text>
+
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              thumbColor={isDark ? "#FFD700" : "#f4f3f4"}
+              trackColor={{ false: "#ccc", true: "#666" }}
+            />
+          </View>
+        </GlassCard>
+
+        {/* DATA */}
+        <GlassCard style={styles.section} delay={200}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: theme.text, fontSize: fontSize + 2 },
+            ]}
+          >
+            {t("settings_data")}
           </Text>
 
-          <Switch
-            value={isDark}
-            onValueChange={toggleTheme}
-            thumbColor={isDark ? "#FFD700" : "#f4f3f4"}
-            trackColor={{ false: "#ccc", true: "#666" }}
-            style={{ marginLeft: "auto" }}
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => navigation.navigate("Favorites")}
+          >
+            <View style={styles.rowIcon}>
+              <Ionicons name="heart-outline" size={26} color={theme.danger} />
+            </View>
+            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+              {t("settings_open_fav")}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.subtext} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => navigation.navigate("History")}
+          >
+            <View style={styles.rowIcon}>
+              <Ionicons name="time-outline" size={26} color={theme.warning} />
+            </View>
+            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+              {t("settings_view_hist")}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.subtext} />
+          </TouchableOpacity>
+        </GlassCard>
+
+        {/* LOGOUT */}
+        <View style={styles.logoutContainer}>
+          <AnimatedButton
+            title={t("settings_logout")}
+            onPress={handleLogout}
+            icon="log-out-outline"
+            primary={false}
           />
         </View>
-      </View>
 
-      {/* DATA */}
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: theme.card, borderColor: theme.border },
-        ]}
-      >
-        <Text
-          style={[
-            styles.cardTitle,
-            { color: theme.text, fontSize: fontSize + 2 },
-          ]}
-        >
-          {t("settings_data")}
+        {/* Version */}
+        <Text style={[styles.version, { color: theme.subtext, fontSize }]}>
+          {t("settings_version")}
         </Text>
 
-        <TouchableOpacity
-          style={styles.row}
-          onPress={() => navigation.navigate("Favorites")}
-        >
-          <Ionicons name="heart-outline" size={26} color="#FF3B30" />
-          <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-            {t("settings_open_fav")}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.row}
-          onPress={() => navigation.navigate("History")}
-        >
-          <Ionicons name="time-outline" size={26} color="#FF9500" />
-          <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-            {t("settings_view_hist")}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* LOGOUT */}
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-        <Text style={styles.logoutText}>{t("settings_logout")}</Text>
-      </TouchableOpacity>
-
-      {/* Version */}
-      <Text style={[styles.version, { color: theme.text, fontSize }]}>
-        {t("settings_version")}
-      </Text>
-    </ScrollView>
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    </GlobalWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { fontWeight: "bold", padding: 20, paddingTop: 40 },
 
-  card: {
-    padding: 15,
-    marginHorizontal: 15,
-    marginBottom: 15,
-    borderRadius: 12,
-    borderWidth: 1,
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+  },
+  headerTitle: {
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontWeight: "600",
   },
 
-  cardTitle: {
-    fontWeight: "600",
-    marginBottom: 10,
+  section: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+
+  sectionTitle: {
+    fontWeight: "bold",
+    marginBottom: 16,
   },
 
   row: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(128, 128, 128, 0.1)",
+  },
+
+  sliderRow: {
+    alignItems: "flex-start",
+  },
+
+  rowIcon: {
+    width: 36,
+    alignItems: "center",
   },
 
   rowText: {
+    flex: 1,
     marginLeft: 12,
+    fontWeight: "500",
   },
 
-  logoutBtn: {
-    marginTop: 30,
-    marginBottom: 60,
-    backgroundColor: "#FF3B30",
+  rowValue: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  sliderHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+
+  logoutContainer: {
     marginHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 10,
-  },
-
-  logoutText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
-    fontSize: 16,
+    marginTop: 10,
   },
 
   version: {
     textAlign: "center",
-    marginBottom: 40,
+    marginTop: 20,
+    marginBottom: 20,
     opacity: 0.6,
   },
 });
