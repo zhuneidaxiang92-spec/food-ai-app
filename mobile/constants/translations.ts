@@ -120,8 +120,15 @@ export const translations = {
         settings_open_fav: "お気に入りを開く",
         settings_view_hist: "履歴を見る",
         settings_logout: "ログアウト",
+        settings_legal: "利用規約とサポート",
+        settings_terms: "利用規約",
+        settings_privacy: "プライバシーポリシー",
+        settings_support: "お問い合わせ",
         settings_version: "SmartChef AI App v1.0.0",
         settings_logout_error: "ログアウトに失敗しました",
+        legal_terms_body: "1. サービス内容\nSmartChef AIは、AIベースの食品画像認識とレシピ提案を情報提供のみを目的として提供します。AIの分析は100%正確ではありません。\n\n2. 健康と安全\nSmartChef AIは、健康上の問題、アレルギー、または調理結果について責任を負いません。利用者はすべての原材料と栄養情報を独自に確認する必要があります。\n\n3. 禁止事項\n違法な使用、スクレイピング、およびリバースエンジニアリングは固く禁じられています。\n\n4. サービスの変更\n当社は、予告なしにサービスを変更または終了する権利を留保します。",
+        legal_privacy_body: "1. データ収集\n分析のために食品画像を収集し、オプションでアカウント情報を収集します。画像は24時間以内に自動的に削除されます。\n\n2. データの利用\nデータは、画像分析、レシピ提案、およびサービス向上のために使用されます。\n\n3. 第三者提供\nアプリを稼働させるために、信頼できるAI APIとクラウドホスティングを使用しています。\n\n4. 利用者の権利\n利用者はいつでもデータの修正または削除を要求することができます。",
+        legal_support_body: "1. お問い合わせ\nメール: support@smartchef-ai.com\n\n2. 対応時間\n営業日の48時間以内の回答を目指しています。\n\n3. サポート対象\n技術的なバグ、アカウントの問題、およびフィードバックをサポートします。",
 
         // Common
         common_error: "エラー",
@@ -248,8 +255,15 @@ export const translations = {
         settings_open_fav: "Open Favorites",
         settings_view_hist: "View History",
         settings_logout: "Logout",
+        settings_legal: "Legal & Support",
+        settings_terms: "Terms of Service",
+        settings_privacy: "Privacy Policy",
+        settings_support: "Contact Support",
         settings_version: "SmartChef AI App v1.0.0",
         settings_logout_error: "Logout failed",
+        legal_terms_body: "1. Service Description\nSmartChef AI provides AI-based food image recognition and recipe recommendations for informational purposes only. AI analysis is not 100% accurate.\n\n2. Health and Safety\nSmartChef AI is not liable for health issues, allergies, or cooking outcomes. Users must verify all ingredients and nutrition independently.\n\n3. Prohibited Use\nIllegal use, scraping, and reverse-engineering are strictly prohibited.\n\n4. Service Changes\nWe reserve the right to modify or terminate service without notice.",
+        legal_privacy_body: "1. Data Collection\nWe collect food images for analysis and optional account info. Images are automatically deleted within 24 hours.\n\n2. Use of Data\nData is used for image analysis, recipe recommendations, and service improvement.\n\n3. Third Parties\nWe use trusted AI APIs and cloud hosting to power the app.\n\n4. Your Rights\nYou can request data correction or deletion at any time by contacting us.",
+        legal_support_body: "1. Contact Us\nEmail: support@smartchef-ai.com\n\n2. Response Time\nWe aim to respond within 48 hours on business days.\n\n3. Support Areas\nWe assist with technical bugs, account issues, and feedback.",
 
         // Common
         common_error: "Error",
