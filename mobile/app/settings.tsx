@@ -7,6 +7,7 @@ import {
   ScrollView,
   Switch,
   Alert,
+  Modal,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
@@ -21,6 +22,8 @@ import GlobalWrapper from "../components/GlobalWrapper";
 import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 
+// Legal content is now managed in translations.ts
+
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
 
@@ -33,6 +36,18 @@ export default function SettingsScreen() {
 
   // Language
   const { language, toggleLanguage, t } = useLanguage();
+
+  // Legal Modal State
+  const [modalVisible, setModalVisible] = React.useState(false);
+  const [modalTitle, setModalTitle] = React.useState("");
+  const [modalContent, setModalContent] = React.useState("");
+
+  const openLegalModal = (titleKey: any, contentKey: any) => {
+    // DEBUG MODE
+    setModalTitle(`${t(titleKey)} [${language}]`);
+    setModalContent(`Key: ${contentKey}\n\n${t(contentKey)}`);
+    setModalVisible(true);
+  };
 
   // =========================
   // 🔐 LOGOUT FUNCTION
@@ -67,6 +82,7 @@ export default function SettingsScreen() {
   };
 
   return (
+<<<<<<< HEAD
     <GlobalWrapper>
       <ScrollView
         style={styles.container}
@@ -98,10 +114,43 @@ export default function SettingsScreen() {
             {t("settings_profile")}
           </Text>
 
+=======
+    <>
+      <ScrollView
+        style={[styles.container, { backgroundColor: theme.background }]}
+      >
+        {/* Header */}
+        <Text
+          style={[
+            styles.header,
+            { color: theme.text, fontSize: fontSize + 4 },
+          ]}
+        >
+          {t("settings_title")} [Logic Patch v2]
+        </Text>
+
+        {/* Profile Section */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: theme.card, borderColor: theme.border },
+          ]}
+        >
+          <Text
+            style={[
+              styles.cardTitle,
+              { color: theme.text, fontSize: fontSize + 2 },
+            ]}
+          >
+            {t("settings_profile")}
+          </Text>
+
+>>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
           <TouchableOpacity
             style={styles.row}
             onPress={() => navigation.navigate("Profile")}
           >
+<<<<<<< HEAD
             <View style={styles.rowIcon}>
               <Ionicons name="person-circle-outline" size={28} color={theme.primary} />
             </View>
@@ -117,11 +166,80 @@ export default function SettingsScreen() {
           <Text
             style={[
               styles.sectionTitle,
+=======
+            <Ionicons name="person-circle-outline" size={28} color="#007AFF" />
+            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+              {t("settings_edit_profile")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* APP SETTINGS */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: theme.card, borderColor: theme.border },
+          ]}
+        >
+          <Text
+            style={[
+              styles.cardTitle,
+>>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
               { color: theme.text, fontSize: fontSize + 2 },
             ]}
           >
             {t("settings_app")}
           </Text>
+<<<<<<< HEAD
+=======
+
+          {/* Language */}
+          <TouchableOpacity
+            style={styles.row}
+            onPress={toggleLanguage}
+          >
+            <Ionicons name="language-outline" size={26} color="#007AFF" />
+            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+              {t("settings_language")}
+            </Text>
+            <Text style={{ marginLeft: "auto", color: theme.subtext }}>
+              {language === "ja" ? "日本語" : "English"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* TEXT SIZE */}
+          <View style={styles.row}>
+            <Ionicons name="text-outline" size={26} color="#007AFF" />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+                {t("settings_text_size")}
+              </Text>
+
+              <Slider
+                style={{ width: "100%", height: 40 }}
+                minimumValue={12}
+                maximumValue={28}
+                step={1}
+                value={fontSize}
+                onValueChange={(val) => setFontSize(val)}
+                minimumTrackTintColor="#007AFF"
+                maximumTrackTintColor="#ccc"
+              />
+
+              <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+                {t("settings_current_size")}: {fontSize}
+              </Text>
+            </View>
+          </View>
+
+          {/* DARK MODE */}
+          <View style={styles.row}>
+            <Ionicons
+              name={isDark ? "moon" : "sunny"}
+              size={26}
+              color={isDark ? "#FFD700" : "#FF9500"}
+            />
+>>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
 
           {/* Language */}
           <TouchableOpacity
@@ -132,6 +250,7 @@ export default function SettingsScreen() {
               <Ionicons name="language-outline" size={26} color={theme.primary} />
             </View>
             <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+<<<<<<< HEAD
               {t("settings_language")}
             </Text>
             <Text style={[styles.rowValue, { color: theme.subtext }]}>
@@ -165,8 +284,21 @@ export default function SettingsScreen() {
                 maximumTrackTintColor={theme.border}
               />
             </View>
+=======
+              {t("settings_dark_mode")}
+            </Text>
+
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              thumbColor={isDark ? "#FFD700" : "#f4f3f4"}
+              trackColor={{ false: "#ccc", true: "#666" }}
+              style={{ marginLeft: "auto" }}
+            />
+>>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
           </View>
 
+<<<<<<< HEAD
           {/* DARK MODE */}
           <View style={styles.row}>
             <View style={styles.rowIcon}>
@@ -195,6 +327,18 @@ export default function SettingsScreen() {
           <Text
             style={[
               styles.sectionTitle,
+=======
+        {/* DATA */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: theme.card, borderColor: theme.border },
+          ]}
+        >
+          <Text
+            style={[
+              styles.cardTitle,
+>>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
               { color: theme.text, fontSize: fontSize + 2 },
             ]}
           >
@@ -205,6 +349,7 @@ export default function SettingsScreen() {
             style={styles.row}
             onPress={() => navigation.navigate("Favorites")}
           >
+<<<<<<< HEAD
             <View style={styles.rowIcon}>
               <Ionicons name="heart-outline" size={26} color={theme.danger} />
             </View>
@@ -212,12 +357,19 @@ export default function SettingsScreen() {
               {t("settings_open_fav")}
             </Text>
             <Ionicons name="chevron-forward" size={20} color={theme.subtext} />
+=======
+            <Ionicons name="heart-outline" size={26} color="#FF3B30" />
+            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+              {t("settings_open_fav")}
+            </Text>
+>>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.row}
             onPress={() => navigation.navigate("History")}
           >
+<<<<<<< HEAD
             <View style={styles.rowIcon}>
               <Ionicons name="time-outline" size={26} color={theme.warning} />
             </View>
@@ -240,12 +392,121 @@ export default function SettingsScreen() {
 
         {/* Version */}
         <Text style={[styles.version, { color: theme.subtext, fontSize }]}>
+=======
+            <Ionicons name="time-outline" size={26} color="#FF9500" />
+            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+              {t("settings_view_hist")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* LEGAL & SUPPORT */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: theme.card, borderColor: theme.border },
+          ]}
+        >
+          <Text
+            style={[
+              styles.cardTitle,
+              { color: theme.text, fontSize: fontSize + 2 },
+            ]}
+          >
+            {t("settings_legal")}
+          </Text>
+
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => openLegalModal("settings_terms", "legal_terms_body")}
+          >
+            <Ionicons name="document-text-outline" size={26} color="#34C759" />
+            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+              {t("settings_terms")}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => openLegalModal("settings_privacy", "legal_privacy_body")}
+          >
+            <Ionicons name="shield-checkmark-outline" size={26} color="#5856D6" />
+            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+              {t("settings_privacy")}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => openLegalModal("settings_support", "legal_support_body")}
+          >
+            <Ionicons name="mail-outline" size={26} color="#007AFF" />
+            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+              {t("settings_support")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* LOGOUT */}
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <Text style={styles.logoutText}>{t("settings_logout")}</Text>
+        </TouchableOpacity>
+
+        {/* Version */}
+        <Text style={[styles.version, { color: theme.text, fontSize }]}>
+>>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
           {t("settings_version")}
         </Text>
+      </ScrollView>
 
+<<<<<<< HEAD
         <View style={{ height: 100 }} />
       </ScrollView>
     </GlobalWrapper>
+=======
+      {/* MODAL */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: theme.card, borderColor: theme.border },
+            ]}
+          >
+            <Text
+              style={[
+                styles.modalTitle,
+                { color: theme.text, fontSize: fontSize + 4 },
+              ]}
+            >
+              {modalTitle}
+            </Text>
+            <ScrollView style={styles.modalScroll}>
+              <Text
+                style={[
+                  styles.modalText,
+                  { color: theme.text, fontSize: fontSize },
+                ]}
+              >
+                {modalContent}
+              </Text>
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.closeBtnText}>{t("home_cancel")}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </>
+>>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
   );
 }
 
@@ -320,5 +581,46 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 20,
     opacity: 0.6,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    maxHeight: "80%",
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontWeight: "bold",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  modalScroll: {
+    marginBottom: 20,
+  },
+  modalText: {
+    lineHeight: 24,
+  },
+  closeBtn: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  closeBtnText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
