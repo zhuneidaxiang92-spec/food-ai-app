@@ -169,9 +169,36 @@ export const translations = {
         profile_deleted: "アカウントを削除しました",
         profile_delete_error: "アカウントの削除に失敗しました",
 
+        // Community
+        community_like: "いいね",
+        community_unlike: "いいね解除",
+        community_likes: "いいね",
+        community_comments: "コメント",
+        community_comment_placeholder: "コメントを入力...",
+        community_post: "投稿",
+        community_posting: "投稿中...",
+        community_post_success: "投稿しました",
+        community_post_error: "投稿に失敗しました",
+        community_like_error: "いいねに失敗しました",
+        community_comment_error: "コメントの投稿に失敗しました",
+        community_empty_comment: "コメントを入力してください",
+        community_delete_comment: "コメントを削除",
+        community_delete_comment_confirm: "このコメントを削除しますか？",
+        community_no_comments: "コメントはまだありません",
+        community_be_first: "最初のコメントを書きましょう！",
+
+        // Offline Mode
+        offline_banner: "オフラインモード",
+        offline_message: "インターネット接続がありません",
+        offline_cache_available: "キャッシュされたデータを使用しています",
+        offline_feature_unavailable: "この機能はオンライン時のみ利用できます",
+
         // Common
         common_error: "エラー",
         common_loading: "読み込み中...",
+        common_retry: "再試行",
+        common_ok: "OK",
+        common_network_error: "ネットワークエラーが発生しました",
     },
     en: {
         // Tabs
@@ -343,8 +370,35 @@ export const translations = {
         profile_deleted: "Account deleted successfully",
         profile_delete_error: "Failed to delete account",
 
+        // Community
+        community_like: "Like",
+        community_unlike: "Unlike",
+        community_likes: "Likes",
+        community_comments: "Comments",
+        community_comment_placeholder: "Write a comment...",
+        community_post: "Post",
+        community_posting: "Posting...",
+        community_post_success: "Posted successfully",
+        community_post_error: "Failed to post",
+        community_like_error: "Failed to like",
+        community_comment_error: "Failed to post comment",
+        community_empty_comment: "Please enter a comment",
+        community_delete_comment: "Delete Comment",
+        community_delete_comment_confirm: "Delete this comment?",
+        community_no_comments: "No comments yet",
+        community_be_first: "Be the first to comment!",
+
+        // Offline Mode
+        offline_banner: "Offline Mode",
+        offline_message: "No internet connection",
+        offline_cache_available: "Using cached data",
+        offline_feature_unavailable: "This feature requires internet connection",
+
         // Common
         common_error: "Error",
         common_loading: "Loading...",
+        common_retry: "Retry",
+        common_ok: "OK",
+        common_network_error: "Network error occurred",
     },
 };

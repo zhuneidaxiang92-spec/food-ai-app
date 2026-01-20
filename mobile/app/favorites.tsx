@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -42,13 +42,13 @@ export default function FavoritesScreen() {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [noteText, setNoteText] = useState("");
 
-  const loadFavorites = async () => {
+  const loadFavorites = useCallback(async () => {
     const stored = await AsyncStorage.getItem("favorites");
     const parsed = stored ? JSON.parse(stored) : [];
     setFavorites(parsed);
-  };
+  }, []);
 
-  const removeFavorite = async (name: string) => {
+  const removeFavorite = useCallback(async (name: string) => {
     Alert.alert(
       t("fav_delete_alert_title"),
       name,
@@ -65,15 +65,15 @@ export default function FavoritesScreen() {
         },
       ]
     );
-  };
+  }, [t, favorites]);
 
-  const openNoteModal = (item: any) => {
+  const openNoteModal = useCallback((item: any) => {
     setSelectedItem(item);
     setNoteText(item.note || "");
     setNoteModalVisible(true);
-  };
+  }, []);
 
-  const saveNote = async () => {
+  const saveNote = useCallback(async () => {
     if (!selectedItem) return;
 
     const updated = favorites.map((item) =>
@@ -85,7 +85,7 @@ export default function FavoritesScreen() {
     setNoteModalVisible(false);
     setSelectedItem(null);
     setNoteText("");
-  };
+  }, [selectedItem, favorites, noteText]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", loadFavorites);

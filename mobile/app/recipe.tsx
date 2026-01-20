@@ -367,6 +367,25 @@ export default function RecipeScreen({ route }: any) {
             🔗 {t("recipe_view_full")}
           </Text>
         )}
+
+        {/* Home Button */}
+        <View style={styles.homeButtonContainer}>
+          <TouchableOpacity
+            style={[styles.homeButton, { backgroundColor: theme.primary }]}
+            onPress={() => {
+              if (navigation.canGoBack()) {
+                navigation.navigate("Tabs", { screen: "Home" });
+              } else {
+                navigation.navigate("Tabs");
+              }
+            }}
+          >
+            <Ionicons name="home" size={20} color="#fff" />
+            <Text style={styles.homeButtonText}>{t("result_back_home")}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
 
       {/* ======================
@@ -537,5 +556,24 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.4)",
     padding: 8,
     borderRadius: 20,
+  },
+  homeButtonContainer: {
+    marginTop: 30,
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  homeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    gap: 8,
+  },
+  homeButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
