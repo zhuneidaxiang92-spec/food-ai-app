@@ -46,11 +46,11 @@ export default function TabsNavigator() {
                 },
             })}
         >
-            <Tab.Screen name="Home" component={HomeScreen} options={{ title: "ホーム" }} />
-            <Tab.Screen name="Scan" component={PreviewScreen} options={{ title: "スキャン" }} />
-            <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: "お気に入り" }} />
-            <Tab.Screen name="History" component={HistoryScreen} options={{ title: "履歴" }} />
-            <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: "設定" }} />
+            <Tab.Screen name="Home" component={HomeScreen} options={{ title: t("tab_home") }} />
+            <Tab.Screen name="Scan" component={PreviewScreen} options={{ title: t("tab_scan") }} />
+            <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: t("tab_favorites") }} />
+            <Tab.Screen name="History" component={HistoryScreen} options={{ title: t("tab_history") }} />
+            <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: t("tab_settings") }} />
         </Tab.Navigator>
     );
 }
