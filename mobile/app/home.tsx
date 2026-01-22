@@ -381,13 +381,13 @@ export default function HomeScreen({ navigation }: any) {
         {/* Search Section */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text, fontSize: fontSize + 4 }]}>
-            レシピを探す
+            {t("home_search_heading")}
           </Text>
         </View>
         <View style={styles.searchSection}>
           <View style={styles.compactSearchCard}>
             <AnimatedButton
-              title="検索する"
+              title={t("home_search_action")}
               onPress={() => navigation.navigate("Search")}
               icon="search-outline"
               primary={true}
@@ -423,7 +423,7 @@ export default function HomeScreen({ navigation }: any) {
                 >
                   <View style={styles.feedHeader}>
                     <View style={[styles.avatar, { backgroundColor: theme.border }]}>
-                      <Text style={{ fontSize: 18 }}>👤</Text>
+                      <Ionicons name="person" size={20} color={theme.subtext} />
                     </View>
                     <View>
                       <Text style={[styles.feedUser, { color: theme.text, fontSize }]}>
@@ -511,7 +511,7 @@ export default function HomeScreen({ navigation }: any) {
                   <ActivityIndicator color={theme.primary} />
                 ) : postComments.length === 0 ? (
                   <Text style={[styles.noComments, { color: theme.subtext }]}>
-                    No comments yet. Be the first!
+                    {t("community_no_comments")} {t("community_be_first")}
                   </Text>
                 ) : (
                   postComments.map((comment, idx) => (
@@ -573,7 +573,7 @@ export default function HomeScreen({ navigation }: any) {
               <TextInput
                 value={commentText}
                 onChangeText={setCommentText}
-                placeholder={replyToUserName ? "返信を入力..." : t("home_comment_placeholder")}
+                placeholder={replyToUserName ? `${t("home_replying_to")} @${replyToUserName}...` : t("home_comment_placeholder")}
                 placeholderTextColor={theme.subtext}
                 style={[
                   styles.input,

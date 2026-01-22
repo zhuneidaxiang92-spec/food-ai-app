@@ -120,7 +120,7 @@ export default function PreviewScreen() {
       }
 
       const normalized = {
-        predicted_food_jp: data.predicted_food_jp || "不明",
+        predicted_food_jp: data.predicted_food_jp || t("recipe_unknown"),
         predicted_food_en: data.predicted_food_en || "",
         confidence: data.confidence || 0,
         recipe: data.recipe || null,
@@ -136,8 +136,8 @@ export default function PreviewScreen() {
         recipe: normalized.recipe, // ✅ CACHE FULL RECIPE
       };
 
-      const oldHistory =
-        JSON.parse(await AsyncStorage.getItem("history")) || [];
+      const historyJson = await AsyncStorage.getItem("history");
+      const oldHistory = historyJson ? JSON.parse(historyJson) : [];
 
       await AsyncStorage.setItem(
         "history",

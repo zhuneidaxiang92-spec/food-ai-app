@@ -82,7 +82,6 @@ export default function SettingsScreen() {
   };
 
   return (
-<<<<<<< HEAD
     <GlobalWrapper>
       <ScrollView
         style={styles.container}
@@ -114,43 +113,10 @@ export default function SettingsScreen() {
             {t("settings_profile")}
           </Text>
 
-=======
-    <>
-      <ScrollView
-        style={[styles.container, { backgroundColor: theme.background }]}
-      >
-        {/* Header */}
-        <Text
-          style={[
-            styles.header,
-            { color: theme.text, fontSize: fontSize + 4 },
-          ]}
-        >
-          {t("settings_title")} [Logic Patch v2]
-        </Text>
-
-        {/* Profile Section */}
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: theme.card, borderColor: theme.border },
-          ]}
-        >
-          <Text
-            style={[
-              styles.cardTitle,
-              { color: theme.text, fontSize: fontSize + 2 },
-            ]}
-          >
-            {t("settings_profile")}
-          </Text>
-
->>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
           <TouchableOpacity
             style={styles.row}
             onPress={() => navigation.navigate("Profile")}
           >
-<<<<<<< HEAD
             <View style={styles.rowIcon}>
               <Ionicons name="person-circle-outline" size={28} color={theme.primary} />
             </View>
@@ -166,80 +132,11 @@ export default function SettingsScreen() {
           <Text
             style={[
               styles.sectionTitle,
-=======
-            <Ionicons name="person-circle-outline" size={28} color="#007AFF" />
-            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-              {t("settings_edit_profile")}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* APP SETTINGS */}
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: theme.card, borderColor: theme.border },
-          ]}
-        >
-          <Text
-            style={[
-              styles.cardTitle,
->>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
               { color: theme.text, fontSize: fontSize + 2 },
             ]}
           >
             {t("settings_app")}
           </Text>
-<<<<<<< HEAD
-=======
-
-          {/* Language */}
-          <TouchableOpacity
-            style={styles.row}
-            onPress={toggleLanguage}
-          >
-            <Ionicons name="language-outline" size={26} color="#007AFF" />
-            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-              {t("settings_language")}
-            </Text>
-            <Text style={{ marginLeft: "auto", color: theme.subtext }}>
-              {language === "ja" ? "日本語" : "English"}
-            </Text>
-          </TouchableOpacity>
-
-          {/* TEXT SIZE */}
-          <View style={styles.row}>
-            <Ionicons name="text-outline" size={26} color="#007AFF" />
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-                {t("settings_text_size")}
-              </Text>
-
-              <Slider
-                style={{ width: "100%", height: 40 }}
-                minimumValue={12}
-                maximumValue={28}
-                step={1}
-                value={fontSize}
-                onValueChange={(val) => setFontSize(val)}
-                minimumTrackTintColor="#007AFF"
-                maximumTrackTintColor="#ccc"
-              />
-
-              <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-                {t("settings_current_size")}: {fontSize}
-              </Text>
-            </View>
-          </View>
-
-          {/* DARK MODE */}
-          <View style={styles.row}>
-            <Ionicons
-              name={isDark ? "moon" : "sunny"}
-              size={26}
-              color={isDark ? "#FFD700" : "#FF9500"}
-            />
->>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
 
           {/* Language */}
           <TouchableOpacity
@@ -250,7 +147,6 @@ export default function SettingsScreen() {
               <Ionicons name="language-outline" size={26} color={theme.primary} />
             </View>
             <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-<<<<<<< HEAD
               {t("settings_language")}
             </Text>
             <Text style={[styles.rowValue, { color: theme.subtext }]}>
@@ -284,21 +180,8 @@ export default function SettingsScreen() {
                 maximumTrackTintColor={theme.border}
               />
             </View>
-=======
-              {t("settings_dark_mode")}
-            </Text>
-
-            <Switch
-              value={isDark}
-              onValueChange={toggleTheme}
-              thumbColor={isDark ? "#FFD700" : "#f4f3f4"}
-              trackColor={{ false: "#ccc", true: "#666" }}
-              style={{ marginLeft: "auto" }}
-            />
->>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
           </View>
 
-<<<<<<< HEAD
           {/* DARK MODE */}
           <View style={styles.row}>
             <View style={styles.rowIcon}>
@@ -327,18 +210,6 @@ export default function SettingsScreen() {
           <Text
             style={[
               styles.sectionTitle,
-=======
-        {/* DATA */}
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: theme.card, borderColor: theme.border },
-          ]}
-        >
-          <Text
-            style={[
-              styles.cardTitle,
->>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
               { color: theme.text, fontSize: fontSize + 2 },
             ]}
           >
@@ -349,7 +220,6 @@ export default function SettingsScreen() {
             style={styles.row}
             onPress={() => navigation.navigate("Favorites")}
           >
-<<<<<<< HEAD
             <View style={styles.rowIcon}>
               <Ionicons name="heart-outline" size={26} color={theme.danger} />
             </View>
@@ -357,24 +227,68 @@ export default function SettingsScreen() {
               {t("settings_open_fav")}
             </Text>
             <Ionicons name="chevron-forward" size={20} color={theme.subtext} />
-=======
-            <Ionicons name="heart-outline" size={26} color="#FF3B30" />
-            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-              {t("settings_open_fav")}
-            </Text>
->>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.row}
             onPress={() => navigation.navigate("History")}
           >
-<<<<<<< HEAD
             <View style={styles.rowIcon}>
               <Ionicons name="time-outline" size={26} color={theme.warning} />
             </View>
             <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
               {t("settings_view_hist")}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.subtext} />
+          </TouchableOpacity>
+        </GlassCard>
+
+        {/* LEGAL & SUPPORT (Restored from the other branch but with GlassCard style) */}
+        <GlassCard style={styles.section} delay={300}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: theme.text, fontSize: fontSize + 2 },
+            ]}
+          >
+            {t("settings_legal")}
+          </Text>
+
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => openLegalModal("settings_terms", "legal_terms_body")}
+          >
+            <View style={styles.rowIcon}>
+              <Ionicons name="document-text-outline" size={26} color="#34C759" />
+            </View>
+            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+              {t("settings_terms")}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.subtext} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => openLegalModal("settings_privacy", "legal_privacy_body")}
+          >
+            <View style={styles.rowIcon}>
+              <Ionicons name="shield-checkmark-outline" size={26} color="#5856D6" />
+            </View>
+            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+              {t("settings_privacy")}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.subtext} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => openLegalModal("settings_support", "legal_support_body")}
+          >
+            <View style={styles.rowIcon}>
+              <Ionicons name="mail-outline" size={26} color="#007AFF" />
+            </View>
+            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
+              {t("settings_support")}
             </Text>
             <Ionicons name="chevron-forward" size={20} color={theme.subtext} />
           </TouchableOpacity>
@@ -392,78 +306,12 @@ export default function SettingsScreen() {
 
         {/* Version */}
         <Text style={[styles.version, { color: theme.subtext, fontSize }]}>
-=======
-            <Ionicons name="time-outline" size={26} color="#FF9500" />
-            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-              {t("settings_view_hist")}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* LEGAL & SUPPORT */}
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: theme.card, borderColor: theme.border },
-          ]}
-        >
-          <Text
-            style={[
-              styles.cardTitle,
-              { color: theme.text, fontSize: fontSize + 2 },
-            ]}
-          >
-            {t("settings_legal")}
-          </Text>
-
-          <TouchableOpacity
-            style={styles.row}
-            onPress={() => openLegalModal("settings_terms", "legal_terms_body")}
-          >
-            <Ionicons name="document-text-outline" size={26} color="#34C759" />
-            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-              {t("settings_terms")}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.row}
-            onPress={() => openLegalModal("settings_privacy", "legal_privacy_body")}
-          >
-            <Ionicons name="shield-checkmark-outline" size={26} color="#5856D6" />
-            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-              {t("settings_privacy")}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.row}
-            onPress={() => openLegalModal("settings_support", "legal_support_body")}
-          >
-            <Ionicons name="mail-outline" size={26} color="#007AFF" />
-            <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
-              {t("settings_support")}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* LOGOUT */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutText}>{t("settings_logout")}</Text>
-        </TouchableOpacity>
-
-        {/* Version */}
-        <Text style={[styles.version, { color: theme.text, fontSize }]}>
->>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
           {t("settings_version")}
         </Text>
-      </ScrollView>
 
-<<<<<<< HEAD
         <View style={{ height: 100 }} />
       </ScrollView>
-    </GlobalWrapper>
-=======
+
       {/* MODAL */}
       <Modal
         animationType="slide"
@@ -505,8 +353,7 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
-    </>
->>>>>>> 5fd7c97a8be8fa327bb6157323a1fd49621dd1e7
+    </GlobalWrapper>
   );
 }
 

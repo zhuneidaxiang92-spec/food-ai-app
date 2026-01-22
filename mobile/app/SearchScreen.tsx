@@ -59,7 +59,7 @@ export default function SearchScreen({ navigation }: any) {
                         <Ionicons name="search" size={20} color={theme.subtext} style={styles.icon} />
                         <TextInput
                             style={[styles.input, { color: theme.text, fontSize }]}
-                            placeholder={t("home_search_placeholder") || "Search recipes..."}
+                            placeholder={t("home_search_placeholder")}
                             placeholderTextColor={theme.subtext}
                             value={query}
                             onChangeText={setQuery}
@@ -76,7 +76,7 @@ export default function SearchScreen({ navigation }: any) {
                 </GlassCard>
 
                 <Text style={[styles.sectionTitle, { color: theme.text, fontSize }]}>
-                    Popular Keywords
+                    {t("search_popular")}
                 </Text>
 
                 <View style={styles.tagsContainer}>

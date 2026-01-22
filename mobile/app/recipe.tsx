@@ -43,19 +43,26 @@ export default function RecipeScreen({ route }: any) {
   const recipeName = route?.params?.recipeName;
 
   // ----------------------------------
-  // Normalize recipe
+  // Normalize recipe based on language
   // ----------------------------------
-  const normalizeRecipe = (r: any) => {
+  const normalizeRecipe = (r: any, currentLanguage: string) => {
     if (!r) return null;
+
+    // 言語に応じてフィールドを選択
+    const isJapanese = currentLanguage === "ja";
+
     return {
-      name_jp: r.name_jp || r.title_jp || r.name_en || t("recipe_unknown"),
+      name_jp: isJapanese
+        ? (r.name_jp || r.title_jp || r.name_en || t("recipe_unknown"))
+        : (r.name_en || r.name_jp || t("recipe_unknown")),
       name_en: r.name_en || r.name_jp || "",
       image: r.image || null,
-      instructions_jp:
-        r.instructions_jp ||
-        r.instructions_en ||
-        t("recipe_no_instructions"),
-      ingredients_jp: r.ingredients_jp || [],
+      instructions_jp: isJapanese
+        ? (r.instructions_jp || r.instructions_en || t("recipe_no_instructions"))
+        : (r.instructions_en || r.instructions_jp || t("recipe_no_instructions")),
+      ingredients_jp: isJapanese
+        ? (r.ingredients_jp || r.ingredients_en || [])
+        : (r.ingredients_en || r.ingredients_jp || []),
       sourceUrl: r.sourceUrl || null,
     };
   };
@@ -72,12 +79,15 @@ export default function RecipeScreen({ route }: any) {
   const [opinion, setOpinion] = useState("");
   const [sharing, setSharing] = useState(false);
 
+  // Get current language
+  const { language } = useLanguage();
+
   // ----------------------------------
   // Reset when params change
   // ----------------------------------
   useEffect(() => {
     if (recipeFromResult) {
-      setRecipe(normalizeRecipe(recipeFromResult));
+      setRecipe(normalizeRecipe(recipeFromResult, language));
       setLoading(false);
       return;
     }
@@ -86,7 +96,7 @@ export default function RecipeScreen({ route }: any) {
       setRecipe(null);
       setLoading(true);
     }
-  }, [recipeFromResult, recipeName]);
+  }, [recipeFromResult, recipeName, language]);
 
   // ----------------------------------
   // Fetch recipe by name with cache
@@ -96,27 +106,28 @@ export default function RecipeScreen({ route }: any) {
 
     const fetchRecipe = async () => {
       try {
-        // 1. Check cache first
-        const cached = await getCachedRecipe(recipeName);
+        // 1. キャッシュキーに言語を含める
+        const cacheKey = `${recipeName}_${language}`;
+        const cached = await getCachedRecipe(cacheKey);
         if (cached) {
-          console.log("✅ Recipe loaded from cache:", recipeName);
-          setRecipe(normalizeRecipe(cached));
+          console.log("✅ Recipe loaded from cache:", cacheKey);
+          setRecipe(normalizeRecipe(cached, language));
           setLoading(false);
           return;
         }
 
-        // 2. Fetch from API if not cached
-        console.log("🌐 Fetching recipe from API:", recipeName);
-        const res = await fetch(`${API_URL}/recipe/${recipeName}`);
+        // 2. Fetch from API with language parameter
+        console.log("🌐 Fetching recipe from API:", recipeName, "Language:", language);
+        const res = await fetch(`${API_URL}/recipe/${recipeName}?lang=${language}`);
         const data = await res.json();
 
         if (data.recipe) {
-          const normalized = normalizeRecipe(data.recipe);
+          const normalized = normalizeRecipe(data.recipe, language);
           setRecipe(normalized);
 
-          // 3. Cache the result
-          await setCachedRecipe(recipeName, data.recipe);
-          console.log("💾 Recipe cached:", recipeName);
+          // 3. Cache the result with language-specific key
+          await setCachedRecipe(cacheKey, data.recipe);
+          console.log("💾 Recipe cached:", cacheKey);
         } else {
           setRecipe(null);
         }
@@ -129,7 +140,7 @@ export default function RecipeScreen({ route }: any) {
     };
 
     fetchRecipe();
-  }, [recipeName]);
+  }, [recipeName, language]);
 
   // ----------------------------------
   // Favorite logic
@@ -138,8 +149,9 @@ export default function RecipeScreen({ route }: any) {
     if (!recipe) return;
 
     const load = async () => {
-      const stored = JSON.parse(await AsyncStorage.getItem("favorites")) || [];
-      setIsFavorite(stored.some((r) => r.name_jp === recipe.name_jp));
+      const favoritesJson = await AsyncStorage.getItem("favorites");
+      const stored = favoritesJson ? JSON.parse(favoritesJson) : [];
+      setIsFavorite(stored.some((r: any) => r.name_jp === recipe.name_jp));
     };
 
     load();
@@ -180,9 +192,10 @@ export default function RecipeScreen({ route }: any) {
   }, []);
 
   const toggleFavorite = async () => {
-    const stored = JSON.parse(await AsyncStorage.getItem("favorites")) || [];
+    const favoritesJson = await AsyncStorage.getItem("favorites");
+    const stored = favoritesJson ? JSON.parse(favoritesJson) : [];
     const updated = isFavorite
-      ? stored.filter((r) => r.name_jp !== recipe.name_jp)
+      ? stored.filter((r: any) => r.name_jp !== recipe.name_jp)
       : [...stored, recipe];
 
     await AsyncStorage.setItem("favorites", JSON.stringify(updated));

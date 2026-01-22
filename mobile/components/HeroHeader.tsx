@@ -12,6 +12,7 @@ import Animated, {
 import { useTheme } from "../context/ThemeContext";
 import { Colors } from "../constants/colors";
 import { useTextSize } from "../context/TextSizeContext";
+import { useLanguage } from "../context/LanguageContext";
 
 interface HeroHeaderProps {
     userName?: string;
@@ -23,7 +24,7 @@ interface HeroHeaderProps {
 }
 
 export default function HeroHeader({
-    userName = "ユーザー",
+    userName,
     greeting,
     subtitle,
     notificationCount = 0,
@@ -32,7 +33,10 @@ export default function HeroHeader({
 }: HeroHeaderProps) {
     const { isDark } = useTheme();
     const { fontSize } = useTextSize();
+    const { t } = useLanguage();
     const theme = isDark ? Colors.dark : Colors.light;
+
+    const displayUserName = userName || t("common_guest");
 
     // アニメーション値
     const scale = useSharedValue(1);
@@ -89,7 +93,7 @@ export default function HeroHeader({
                 ) : (
                     <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
                         <Text style={styles.avatarText}>
-                            {userName.charAt(0).toUpperCase()}
+                            {displayUserName.charAt(0).toUpperCase()}
                         </Text>
                     </View>
                 )}
