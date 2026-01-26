@@ -11,6 +11,9 @@ import {
   TextInput,
   Alert,
   Dimensions,
+  RefreshControl,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
@@ -64,6 +67,19 @@ export default function HomeScreen({ navigation }: any) {
 
   // プロフィール画像
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([
+      loadRecommendations(),
+      loadCommunityFeed(),
+      loadNotifications(),
+      loadTrending(),
+      loadProfileImage(),
+    ]);
+    setRefreshing(false);
+  };
 
   // コメントモーダルを閉じる時に返信状態をリセット
   const closeCommentModal = () => {
@@ -85,6 +101,7 @@ export default function HomeScreen({ navigation }: any) {
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       loadProfileImage();
+      loadCommunityFeed(); // Refresh feed on return
     });
     return unsubscribe;
   }, [navigation]);
@@ -349,6 +366,9 @@ export default function HomeScreen({ navigation }: any) {
       <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
+        }
       >
         {/* Hero Header */}
         <HeroHeader
@@ -495,7 +515,11 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* Comment Modal */}
         <Modal visible={commentVisible} transparent animationType="slide" onRequestClose={closeCommentModal}>
-          <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.modalOverlay}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+          >
             <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: theme.text, fontSize: fontSize + 2 }]}>
@@ -505,6 +529,7 @@ export default function HomeScreen({ navigation }: any) {
                   <Ionicons name="close" size={24} color={theme.subtext} />
                 </TouchableOpacity>
               </View>
+
 
               <ScrollView style={styles.commentsList}>
                 {loadingComments ? (
@@ -588,8 +613,9 @@ export default function HomeScreen({ navigation }: any) {
               >
                 <Text style={styles.btnText}>{t("home_submit")}</Text>
               </TouchableOpacity>
+
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
 
         <View style={{ height: 100 }} />

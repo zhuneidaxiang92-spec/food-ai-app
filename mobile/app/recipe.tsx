@@ -37,7 +37,7 @@ export default function RecipeScreen({ route }: any) {
   const { isDark } = useTheme();
   const theme = isDark ? Colors.dark : Colors.light;
   const { fontSize } = useTextSize();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const recipeFromResult = route?.params?.recipe;
   const recipeName = route?.params?.recipeName;
@@ -57,12 +57,19 @@ export default function RecipeScreen({ route }: any) {
         : (r.name_en || r.name_jp || t("recipe_unknown")),
       name_en: r.name_en || r.name_jp || "",
       image: r.image || null,
+<<<<<<< HEAD
       instructions_jp: isJapanese
         ? (r.instructions_jp || r.instructions_en || t("recipe_no_instructions"))
         : (r.instructions_en || r.instructions_jp || t("recipe_no_instructions")),
       ingredients_jp: isJapanese
         ? (r.ingredients_jp || r.ingredients_en || [])
         : (r.ingredients_en || r.ingredients_jp || []),
+=======
+      instructions_jp: r.instructions_jp || r.instructions_en || t("recipe_no_instructions"),
+      instructions_en: r.instructions_en || r.instructions_jp || t("recipe_no_instructions"),
+      ingredients_jp: r.ingredients_jp || [],
+      ingredients_en: r.ingredients_en || r.ingredients_jp || [],
+>>>>>>> ec883f1 (Fix API connection, implement community refresh on focus, add pull-to-refresh, and fix keyboard obstruction)
       sourceUrl: r.sourceUrl || null,
     };
   };
@@ -85,16 +92,45 @@ export default function RecipeScreen({ route }: any) {
   // ----------------------------------
   // Reset when params change
   // ----------------------------------
+  // ----------------------------------
+  // Init & Fetch Logic
+  // ----------------------------------
   useEffect(() => {
+<<<<<<< HEAD
     if (recipeFromResult) {
       setRecipe(normalizeRecipe(recipeFromResult, language));
       setLoading(false);
       return;
     }
+=======
+    const loadRecipe = async () => {
+      let targetName = recipeName;
 
-    if (recipeName) {
-      setRecipe(null);
+      // 1. Check passed result
+      if (recipeFromResult) {
+        const norm = normalizeRecipe(recipeFromResult);
+
+        if (norm) {
+          // Heuristic: If name_jp is purely ASCII (English), and we have an English name,
+          // it likely means translation failed previously. Force re-fetch.
+          const isAscii = (str: string) => /^[\x00-\x7F]*$/.test(str || "");
+
+          if (isAscii(norm.name_jp) && norm.name_en) {
+            console.log("⚠️ Invalid Japanese detected in params. Forcing re-fetch.");
+            targetName = norm.name_en; // Use English name to fetch
+          } else {
+            setRecipe(norm);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
+      if (!targetName) return;
+>>>>>>> ec883f1 (Fix API connection, implement community refresh on focus, add pull-to-refresh, and fix keyboard obstruction)
+
       setLoading(true);
+<<<<<<< HEAD
     }
   }, [recipeFromResult, recipeName, language]);
 
@@ -119,15 +155,45 @@ export default function RecipeScreen({ route }: any) {
         // 2. Fetch from API with language parameter
         console.log("🌐 Fetching recipe from API:", recipeName, "Language:", language);
         const res = await fetch(`${API_URL}/recipe/${recipeName}?lang=${language}`);
+=======
+      try {
+        // 2. Check cache
+        const cached = await getCachedRecipe(targetName);
+        if (cached) {
+          const normCached = normalizeRecipe(cached);
+
+          if (normCached) {
+            // Same check for cache
+            const isAscii = (str: string) => /^[\x00-\x7F]*$/.test(str || "");
+            if (!isAscii(normCached.name_jp)) {
+              console.log("✅ Recipe loaded from cache:", targetName);
+              setRecipe(normCached);
+              setLoading(false);
+              return;
+            }
+          }
+          console.log("⚠️ Cache invalid. Fetching fresh...");
+        }
+
+        // 3. Fetch from API
+        console.log("🌐 Fetching recipe from API:", targetName);
+        const res = await fetch(`${API_URL}/recipe/${encodeURIComponent(targetName)}`);
+>>>>>>> ec883f1 (Fix API connection, implement community refresh on focus, add pull-to-refresh, and fix keyboard obstruction)
         const data = await res.json();
 
         if (data.recipe) {
           const normalized = normalizeRecipe(data.recipe, language);
           setRecipe(normalized);
 
+<<<<<<< HEAD
           // 3. Cache the result with language-specific key
           await setCachedRecipe(cacheKey, data.recipe);
           console.log("💾 Recipe cached:", cacheKey);
+=======
+          // 4. Cache the result
+          await setCachedRecipe(targetName, data.recipe);
+          console.log("💾 Recipe cached:", targetName);
+>>>>>>> ec883f1 (Fix API connection, implement community refresh on focus, add pull-to-refresh, and fix keyboard obstruction)
         } else {
           setRecipe(null);
         }
@@ -139,8 +205,13 @@ export default function RecipeScreen({ route }: any) {
       }
     };
 
+<<<<<<< HEAD
     fetchRecipe();
   }, [recipeName, language]);
+=======
+    loadRecipe();
+  }, [recipeFromResult, recipeName]);
+>>>>>>> ec883f1 (Fix API connection, implement community refresh on focus, add pull-to-refresh, and fix keyboard obstruction)
 
   // ----------------------------------
   // Favorite logic
@@ -149,8 +220,13 @@ export default function RecipeScreen({ route }: any) {
     if (!recipe) return;
 
     const load = async () => {
+<<<<<<< HEAD
       const favoritesJson = await AsyncStorage.getItem("favorites");
       const stored = favoritesJson ? JSON.parse(favoritesJson) : [];
+=======
+      const json = await AsyncStorage.getItem("favorites");
+      const stored = json ? JSON.parse(json) : [];
+>>>>>>> ec883f1 (Fix API connection, implement community refresh on focus, add pull-to-refresh, and fix keyboard obstruction)
       setIsFavorite(stored.some((r: any) => r.name_jp === recipe.name_jp));
     };
 
@@ -170,16 +246,19 @@ export default function RecipeScreen({ route }: any) {
     }
 
     const text = `
-      ${recipe.name_jp}。
-      材料。
-      ${recipe.ingredients_jp.join("。")}。
+      ${language === "en" ? recipe.name_en : recipe.name_jp}。
+      ${t("recipe_ingredients")}。
+      ${(language === "en"
+        ? recipe.ingredients_en.map((i: any) => typeof i === "string" ? i : `${i.measure} ${i.ingredient}`)
+        : recipe.ingredients_jp
+      ).join("。")}。
       作り方。
-      ${clean(recipe.instructions_jp)}
+      ${clean(language === "en" ? recipe.instructions_en : recipe.instructions_jp)}
     `;
 
     setIsSpeaking(true);
     Speech.speak(text, {
-      language: "ja",
+      language: language === "en" ? "en" : "ja",
       onDone: () => setIsSpeaking(false),
       onStopped: () => setIsSpeaking(false),
     });
@@ -192,8 +271,13 @@ export default function RecipeScreen({ route }: any) {
   }, []);
 
   const toggleFavorite = async () => {
+<<<<<<< HEAD
     const favoritesJson = await AsyncStorage.getItem("favorites");
     const stored = favoritesJson ? JSON.parse(favoritesJson) : [];
+=======
+    const json = await AsyncStorage.getItem("favorites");
+    const stored = json ? JSON.parse(json) : [];
+>>>>>>> ec883f1 (Fix API connection, implement community refresh on focus, add pull-to-refresh, and fix keyboard obstruction)
     const updated = isFavorite
       ? stored.filter((r: any) => r.name_jp !== recipe.name_jp)
       : [...stored, recipe];
@@ -298,7 +382,7 @@ export default function RecipeScreen({ route }: any) {
                 { color: theme.text, fontSize: fontSize + 6 },
               ]}
             >
-              {recipe.name_jp}
+              {language === "en" && recipe.name_en ? recipe.name_en : recipe.name_jp}
             </Text>
 
             <View style={{ flexDirection: "row" }}>
@@ -354,9 +438,12 @@ export default function RecipeScreen({ route }: any) {
         </Text>
 
         <GlassCard style={styles.ingredientsBox} delay={200}>
-          {recipe.ingredients_jp.map((i: string, idx: number) => (
+          {(language === "en" && recipe.ingredients_en
+            ? recipe.ingredients_en
+            : recipe.ingredients_jp
+          ).map((i: any, idx: number) => (
             <Text key={idx} style={{ fontSize, color: theme.text }}>
-              • {i}
+              • {typeof i === "string" ? i : `${i.measure} ${i.ingredient}`}
             </Text>
           ))}
         </GlassCard>
@@ -366,7 +453,11 @@ export default function RecipeScreen({ route }: any) {
         </Text>
 
         <TypingText
-          text={clean(recipe.instructions_jp)}
+          text={clean(
+            language === "en" && recipe.instructions_en
+              ? recipe.instructions_en
+              : recipe.instructions_jp
+          )}
           textStyle={{ color: theme.text, fontSize }}
           skipAnimation={true}
           showSkipButton={false}
@@ -408,6 +499,7 @@ export default function RecipeScreen({ route }: any) {
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.modalOverlay}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
         >
           <View
             style={[
@@ -430,7 +522,7 @@ export default function RecipeScreen({ route }: any) {
               showsVerticalScrollIndicator={false}
             >
               <Text style={[styles.modalRecipeName, { color: theme.text, fontSize }]}>
-                {recipe.name_jp}
+                {language === "en" && recipe.name_en ? recipe.name_en : recipe.name_jp}
               </Text>
 
               <TextInput

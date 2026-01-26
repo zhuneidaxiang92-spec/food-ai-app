@@ -21,6 +21,8 @@ print("MYSQL_HOST =", os.getenv("MYSQL_HOST"))
 from fastapi import FastAPI, File, UploadFile, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+import httpx
+import asyncio
 
 from . import models
 from . import database
@@ -32,44 +34,87 @@ from io import BytesIO
 
 
 # ==============================================
-# 🌐 DeepL Translation
+# 🌐 DeepL / OpenAI Translation (Async + Batch)
 # ==============================================
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 
-def translate_to_japanese(text: str) -> str:
+async def translate_async(client: httpx.AsyncClient, text: str, target_lang: str = "JA") -> str:
+    """Non-blocking translation of a single string."""
+    if not text:
+        return ""
+
+    # 1️⃣ Try DeepL
     try:
-        if not text:
-            return ""
         url = "https://api-free.deepl.com/v2/translate"
         params = {
             "auth_key": DEEPL_API_KEY,
             "text": text,
-            "target_lang": "JA"
+            "target_lang": target_lang
         }
-        response = requests.post(url, data=params)
+        response = await client.post(url, data=params, timeout=10)
         data = response.json()
-        return data["translations"][0]["text"]
+        if "translations" in data:
+            return data["translations"][0]["text"]
     except Exception as e:
-        print("❌ Translation error:", e)
-        return text
+        print(f"⚠️ DeepL Async Error: {e}")
 
-def translate_to_english(text: str) -> str:
+    # 2️⃣ Fallback: OpenAI
     try:
-        if not text:
-            return ""
-        url = "https://api-free.deepl.com/v2/translate"
-        params = {
-            "auth_key": DEEPL_API_KEY,
-            "text": text,
-            "target_lang": "EN"
-        }
-        response = requests.post(url, data=params)
-        data = response.json()
-        return data["translations"][0]["text"]
-    except Exception as e:
-        print("❌ Translation error (EN):", e)
-        return text
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if not openai_key:
+            return text
 
+        lang_name = "Japanese" if target_lang == "JA" else "English"
+        
+        url = "https://api.openai.com/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {openai_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "gpt-3.5-turbo",
+            "messages": [
+                {"role": "system", "content": f"You are a helpful translator. Translate the following text to {lang_name}. Return ONLY the translation, no extra text."},
+                {"role": "user", "content": text}
+            ],
+            "temperature": 0.3
+        }
+        res = await client.post(url, headers=headers, json=payload, timeout=20)
+        data = res.json()
+        if "choices" in data:
+            return data["choices"][0]["message"]["content"].strip()
+            
+    except Exception as e:
+        print(f"❌ OpenAI Async Error: {e}")
+
+    return text
+
+async def translate_batch(client: httpx.AsyncClient, texts: list[str]) -> list[str]:
+    """Translate multiple strings in ONE API call (reduces lag)."""
+    if not texts: return []
+    
+    # Filter empty strings to avoid breaking logic
+    valid_texts = [t for t in texts if t]
+    if not valid_texts: return texts
+    
+    # Delimiter for batching
+    delimiter = "\n|||\n"
+    combined = delimiter.join(valid_texts)
+    
+    # Translate the big block
+    translated_block = await translate_async(client, combined)
+    
+    # Split back
+    parts = translated_block.split(delimiter)
+    
+    # Re-map to original size (simple approach usually works, or precise map)
+    # If standard split fails, fallback to line-splitting or return block
+    # For safety, if counts mismatch, just return originals or best effort.
+    if len(parts) == len(valid_texts):
+        return parts
+        
+    # Fallback if delimiter got messed up: try simple newline split
+    return translated_block.split("\n")[:len(valid_texts)]
 
 # ==============================================
 # 🚀 FastAPI Setup
@@ -137,106 +182,105 @@ async def predict_food(file: UploadFile = File(...)):
         image.save(buf, format="JPEG", quality=85)
         img_final = buf.getvalue()
 
-        # HuggingFace Prediction
-        hf_url = f"https://router.huggingface.co/hf-inference/models/{HUGGINGFACE_MODEL}"
-        headers = {
-            "Authorization": f"Bearer {HUGGINGFACE_API_KEY}",
-            "Content-Type": "image/jpeg",
-        }
+        async with httpx.AsyncClient() as client:
+            # 1. HuggingFace Prediction (Async)
+            hf_url = f"https://router.huggingface.co/hf-inference/models/{HUGGINGFACE_MODEL}"
+            headers = {
+                "Authorization": f"Bearer {HUGGINGFACE_API_KEY}",
+                "Content-Type": "image/jpeg",
+            }
 
-        print("🚀 Sending image to HuggingFace...")
-        res = requests.post(hf_url, headers=headers, data=img_final, timeout=60)
+            print("🚀 Sending image to HuggingFace (Async)...")
+            res = await client.post(hf_url, headers=headers, content=img_final, timeout=60)
 
-        try:
-            pred = res.json()
-        except:
-            return {"error": "Invalid HuggingFace response", "recipe_found": False}
+            try:
+                pred = res.json()
+            except:
+                return {"error": "Invalid HuggingFace response", "recipe_found": False}
 
-        if not pred or not isinstance(pred, list):
-            return {"error": "No prediction", "recipe_found": False}
+            if not pred or not isinstance(pred, list):
+                return {"error": "No prediction", "recipe_found": False}
 
-        food_name = pred[0]["label"].lower()
-        confidence = pred[0]["score"]
+            food_name = pred[0]["label"].lower()
+            confidence = pred[0]["score"]
+            print(f"✅ AI Result: {food_name} ({confidence})")
 
-        # Translate to Japanese
-        food_name_jp = translate_to_japanese(food_name)
+            # 2. Parallel: Translate Name & Search Repository
+            # We run these concurrently to save time
+            async def search_spoonacular():
+                queries = [food_name, f"{food_name} recipe"]
+                for q in queries:
+                    url = "https://api.spoonacular.com/recipes/complexSearch"
+                    params = {"query": q, "number": 1, "apiKey": SPOONACULAR_API_KEY}
+                    r = await client.get(url, params=params, timeout=15)
+                    d = r.json()
+                    if d.get("results"):
+                        return d["results"][0]["id"]
+                return None
 
-        # Try multiple queries to Spoonacular
-        search_queries = [
-            food_name,
-            food_name.replace("_", " "),
-            f"{food_name} recipe",
-            f"how to make {food_name}",
-        ]
+            # Execute translation and search in parallel
+            task_trans_name = translate_async(client, food_name)
+            task_search = search_spoonacular()
+            
+            food_name_jp, recipe_id = await asyncio.gather(task_trans_name, task_search)
 
-        recipe_id = None
-        for q in search_queries:
-            search_url = (
-                f"https://api.spoonacular.com/recipes/complexSearch"
-                f"?query={q}&number=1&apiKey={SPOONACULAR_API_KEY}"
+            if not recipe_id:
+                return {
+                    "predicted_food_en": food_name,
+                    "predicted_food_jp": food_name_jp,
+                    "confidence": confidence,
+                    "recipe_found": False,
+                    "recipe": None,
+                }
+
+            # 3. Fetch Recipe & Batch Translate (Parallel)
+            info_url = (
+                f"https://api.spoonacular.com/recipes/{recipe_id}/information"
+                f"?apiKey={SPOONACULAR_API_KEY}"
             )
-            res2 = requests.get(search_url, timeout=15)
-            search_data = res2.json()
-            if search_data.get("results"):
-                recipe_id = search_data["results"][0]["id"]
-                break
+            info_res = await client.get(info_url, timeout=20)
+            info = info_res.json()
 
-        if not recipe_id:
+            title_en = info.get("title", "")
+            instructions_en = info.get("instructions", "No instructions available.")
+            ingredients_raw = info.get("extendedIngredients", [])
+
+            # Batch Translate Ingredients (Huge Performance Win)
+            ing_names = [ing.get("name", "") for ing in ingredients_raw]
+            
+            t_title, t_instr, t_ingreds = await asyncio.gather(
+                translate_async(client, title_en),
+                translate_async(client, instructions_en),
+                translate_batch(client, ing_names)
+            )
+
+            recipe = {
+                "name_en": title_en,
+                "name_jp": t_title,
+                "image": info.get("image"),
+                "instructions_en": instructions_en,
+                "instructions_jp": t_instr,
+                "ingredients_en": [
+                    {
+                        "ingredient": ing.get("name"),
+                        "measure": f"{ing.get('amount', '')} {ing.get('unit', '')}".strip()
+                    }
+                    for ing in ingredients_raw
+                ],
+                "ingredients_jp": t_ingreds, # List of strings
+                "sourceUrl": info.get("sourceUrl"),
+            }
+
             return {
                 "predicted_food_en": food_name,
                 "predicted_food_jp": food_name_jp,
                 "confidence": confidence,
-                "recipe_found": False,
-                "recipe": None,
+                "recipe_found": True,
+                "recipe": recipe,
             }
 
-        # Fetch full recipe info
-        info_url = (
-            f"https://api.spoonacular.com/recipes/{recipe_id}/information"
-            f"?apiKey={SPOONACULAR_API_KEY}"
-        )
-        info_res = requests.get(info_url, timeout=20)
-        info = info_res.json()
-
-        title_en = info.get("title", "")
-        instructions_en = info.get("instructions", "No instructions available.")
-        ingredients_raw = info.get("extendedIngredients", [])
-
-        # Translate
-        title_jp = translate_to_japanese(title_en)
-        instructions_jp = translate_to_japanese(instructions_en)
-        ingredients_jp = [
-            translate_to_japanese(ing.get("name", "")) 
-            for ing in ingredients_raw
-        ]
-
-        recipe = {
-            "name_en": title_en,
-            "name_jp": title_jp,
-            "image": info.get("image"),
-            "instructions_en": instructions_en,
-            "instructions_jp": instructions_jp,
-            "ingredients_en": [
-                {
-                    "ingredient": ing.get("name"),
-                    "measure": f"{ing.get('amount', '')} {ing.get('unit', '')}".strip()
-                }
-                for ing in ingredients_raw
-            ],
-            "ingredients_jp": ingredients_jp,
-            "sourceUrl": info.get("sourceUrl"),
-        }
-
-        return {
-            "predicted_food_en": food_name,
-            "predicted_food_jp": food_name_jp,
-            "confidence": confidence,
-            "recipe_found": True,
-            "recipe": recipe,
-        }
-
     except Exception as e:
-        print("❌ ERROR:", e)
+        print("❌ Async Predict Error:", e)
         return {"error": str(e), "recipe_found": False}
 
 
@@ -244,89 +288,80 @@ async def predict_food(file: UploadFile = File(...)):
 # ⭐ NEW: Fetch Recipe by Name (Fix for Home → Recipe)
 # ============================================================
 @app.get("/recipe/{food_name}")
-def get_recipe_by_name(food_name: str):
+async def get_recipe_by_name(food_name: str):
     try:
-        search_queries = [
-            food_name,
-            food_name.replace("_", " "),
-            f"{food_name} recipe",
-            f"how to make {food_name}",
-        ]
-
-        recipe_id = None
-
-        # 1. Search Spoonacular (Original Name)
-        search_queries = [
-            food_name,
-            food_name.replace("_", " "),
-        ]
-        
-        for q in search_queries:
-            search_url = (
-                f"https://api.spoonacular.com/recipes/complexSearch"
-                f"?query={q}&number=1&apiKey={SPOONACULAR_API_KEY}"
-            )
-            search_data = requests.get(search_url).json()
-
-            if search_data.get("results"):
-                recipe_id = search_data["results"][0]["id"]
-                break
-        
-        # 2. If not found, try translating to English and search again
-        if not recipe_id:
-            print(f"⚠️ No results for '{food_name}', translating to English...")
-            translated_name = translate_to_english(food_name)
-            print(f"➡️ Translated: {translated_name}")
+        async with httpx.AsyncClient() as client:
+            recipe_id = None
             
-            # Simple retry with translated name
-            search_url = (
-                f"https://api.spoonacular.com/recipes/complexSearch"
-                f"?query={translated_name}&number=1&apiKey={SPOONACULAR_API_KEY}"
+            # Helper to search
+            async def search_sq(q):
+                try:
+                    url = "https://api.spoonacular.com/recipes/complexSearch"
+                    params = {"query": q, "number": 1, "apiKey": SPOONACULAR_API_KEY}
+                    r = await client.get(url, params=params, timeout=10)
+                    d = r.json()
+                    if d.get("results"):
+                        return d["results"][0]["id"]
+                except: pass
+                return None
+
+            # 1. Search Spoonacular (Original Name)
+            # Try exact and underscore-replaced
+            queries = [food_name, food_name.replace("_", " ")]
+            
+            for q in queries:
+                recipe_id = await search_sq(q)
+                if recipe_id: break
+            
+            # 2. If not found, try translating to English and search again
+            if not recipe_id:
+                print(f"⚠️ No results for '{food_name}', translating to English...")
+                translated_name = await translate_async(client, food_name, target_lang="EN")
+                print(f"➡️ Translated: {translated_name}")
+                recipe_id = await search_sq(translated_name)
+
+            if not recipe_id:
+                return {"detail": "Not Found", "recipe": None}
+
+            # Fetch complete recipe
+            info_url = (
+                f"https://api.spoonacular.com/recipes/{recipe_id}/information"
+                f"?apiKey={SPOONACULAR_API_KEY}"
             )
-            search_data = requests.get(search_url).json()
+            info_res = await client.get(info_url, timeout=20)
+            info = info_res.json()
 
-            if search_data.get("results"):
-                recipe_id = search_data["results"][0]["id"]
+            title_en = info.get("title", "")
+            instructions_en = info.get("instructions", "") or "No instructions."
+            ingredients_raw = info.get("extendedIngredients", [])
 
-        if not recipe_id:
-            return {"detail": "Not Found", "recipe": None}
+            # Parallel Translate
+            ing_names = [ing.get("name", "") for ing in ingredients_raw]
+            
+            t_title, t_instr, t_ingreds = await asyncio.gather(
+                translate_async(client, title_en),
+                translate_async(client, instructions_en),
+                translate_batch(client, ing_names)
+            )
 
-        # Fetch complete recipe
-        info_url = (
-            f"https://api.spoonacular.com/recipes/{recipe_id}/information"
-            f"?apiKey={SPOONACULAR_API_KEY}"
-        )
-        info = requests.get(info_url).json()
+            recipe = {
+                "name_en": title_en,
+                "name_jp": t_title,
+                "image": info.get("image"),
+                "instructions_en": instructions_en,
+                "instructions_jp": t_instr,
+                "ingredients_en": [
+                    {
+                        "ingredient": ing.get("name"),
+                        "measure": f"{ing.get('amount', '')} {ing.get('unit', '')}".strip()
+                    }
+                    for ing in ingredients_raw
+                ],
+                "ingredients_jp": t_ingreds,
+                "sourceUrl": info.get("sourceUrl"),
+            }
 
-        title_en = info.get("title", "")
-        instructions_en = info.get("instructions", "")
-        ingredients_raw = info.get("extendedIngredients", [])
-
-        # Translate
-        title_jp = translate_to_japanese(title_en)
-        instructions_jp = translate_to_japanese(instructions_en)
-        ingredients_jp = [
-            translate_to_japanese(ing.get("name", "")) for ing in ingredients_raw
-        ]
-
-        recipe = {
-            "name_en": title_en,
-            "name_jp": title_jp,
-            "image": info.get("image"),
-            "instructions_en": instructions_en,
-            "instructions_jp": instructions_jp,
-            "ingredients_en": [
-                {
-                    "ingredient": ing.get("name"),
-                    "measure": f"{ing.get('amount', '')} {ing.get('unit', '')}".strip(),
-                }
-                for ing in ingredients_raw
-            ],
-            "ingredients_jp": ingredients_jp,
-            "sourceUrl": info.get("sourceUrl"),
-        }
-
-        return {"recipe": recipe}
+            return {"recipe": recipe}
 
     except Exception as e:
         return {"error": str(e), "recipe": None}

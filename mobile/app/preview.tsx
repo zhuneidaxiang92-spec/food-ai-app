@@ -88,7 +88,7 @@ export default function PreviewScreen() {
       // --- A. RESIZE IMAGE (Optimization) ---
       const manipResult = await manipulateAsync(
         imageUri,
-        [{ resize: { width: 800 } }], // Resize to max 800px width
+        [{ resize: { width: 512 } }], // Optimize: 512px is sufficient for API
         { compress: 0.7, format: SaveFormat.JPEG }
       );
 
