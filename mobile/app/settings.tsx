@@ -18,6 +18,7 @@ import { useTextSize } from "../context/TextSizeContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 import { Colors } from "../constants/colors";
+
 import GlobalWrapper from "../components/GlobalWrapper";
 import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
@@ -201,6 +202,7 @@ export default function SettingsScreen() {
               onValueChange={toggleTheme}
               thumbColor={isDark ? "#FFD700" : "#f4f3f4"}
               trackColor={{ false: "#ccc", true: "#666" }}
+              style={{ marginLeft: "auto" }}
             />
           </View>
         </GlassCard>
@@ -221,7 +223,7 @@ export default function SettingsScreen() {
             onPress={() => navigation.navigate("Favorites")}
           >
             <View style={styles.rowIcon}>
-              <Ionicons name="heart-outline" size={26} color={theme.danger} />
+              <Ionicons name="heart-outline" size={26} color={theme.danger || "#FF3B30"} />
             </View>
             <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
               {t("settings_open_fav")}
@@ -234,7 +236,7 @@ export default function SettingsScreen() {
             onPress={() => navigation.navigate("History")}
           >
             <View style={styles.rowIcon}>
-              <Ionicons name="time-outline" size={26} color={theme.warning} />
+              <Ionicons name="time-outline" size={26} color={theme.warning || "#FF9500"} />
             </View>
             <Text style={[styles.rowText, { color: theme.text, fontSize }]}>
               {t("settings_view_hist")}
@@ -243,7 +245,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </GlassCard>
 
-        {/* LEGAL & SUPPORT (Restored from the other branch but with GlassCard style) */}
+        {/* LEGAL & SUPPORT */}
         <GlassCard style={styles.section} delay={300}>
           <Text
             style={[
@@ -370,47 +372,47 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   headerSubtitle: {
-    fontWeight: "600",
+    opacity: 0.7,
   },
 
   section: {
-    marginHorizontal: 20,
-    marginBottom: 20,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
   },
-
   sectionTitle: {
     fontWeight: "bold",
     marginBottom: 16,
+    opacity: 0.8,
   },
 
   row: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(128, 128, 128, 0.1)",
   },
-
-  sliderRow: {
-    alignItems: "flex-start",
-  },
-
   rowIcon: {
-    width: 36,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.05)",
     alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
   },
-
   rowText: {
     flex: 1,
-    marginLeft: 12,
     fontWeight: "500",
   },
-
   rowValue: {
     fontSize: 14,
     fontWeight: "600",
   },
 
+  sliderRow: {
+    alignItems: "flex-start",
+    paddingVertical: 16,
+  },
   sliderHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -419,15 +421,16 @@ const styles = StyleSheet.create({
   },
 
   logoutContainer: {
-    marginHorizontal: 20,
-    marginTop: 10,
+    paddingHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 10,
   },
 
   version: {
     textAlign: "center",
     marginTop: 20,
-    marginBottom: 20,
-    opacity: 0.6,
+    marginBottom: 40,
+    opacity: 0.5,
   },
 
   modalOverlay: {
@@ -435,35 +438,32 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
   modalContent: {
     width: "90%",
     maxHeight: "80%",
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 24,
+    padding: 24,
     borderWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
   modalTitle: {
     fontWeight: "bold",
-    marginBottom: 15,
+    marginBottom: 16,
     textAlign: "center",
   },
   modalScroll: {
     marginBottom: 20,
   },
   modalText: {
-    lineHeight: 24,
+    lineHeight: 22,
+    opacity: 0.9,
   },
   closeBtn: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: "center",
+    backgroundColor: "#007AFF",
   },
   closeBtnText: {
     color: "white",
