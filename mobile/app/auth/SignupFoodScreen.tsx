@@ -45,7 +45,7 @@ export default function SignupFoodScreen({ route }: any) {
     }
 
     try {
-      await fetch(`${API_URL}/users/${userId}/preferences`, {
+      await fetch(`${API_URL}/api/users/${userId}/preferences`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ foods: selected }),

@@ -82,7 +82,7 @@ export const translations = {
         // Recipe
         recipe_ingredients: "材料",
         recipe_instructions: "作り方",
-        recipe_view_full: "View Full Recipe",
+        recipe_view_full: "全レシピを見る",
         recipe_share: "コミュニティに投稿",
         recipe_share_title: "コミュニティに投稿",
         recipe_share_placeholder: "感想を書いてください（任意）",

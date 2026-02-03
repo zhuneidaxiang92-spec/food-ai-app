@@ -1,0 +1,56 @@
+﻿1. users
+カラム名,論理名,データ型,PK,FK,Not Null,Unique,デフォルト値,説明
+id,ユーザーID,INT,●,,●,,,自動採番
+google_id,Google識別子,VARCHAR(255),,,,,,Google認証用ID
+name,名前,VARCHAR(255),,,,,,ユーザー名
+email,メールアドレス,VARCHAR(255),,,●,●,,ログイン用メールアドレス
+password_hash,パスワードハッシュ,VARCHAR(255),,,,,,暗号化済みパスワード
+profile_image,プロフィール画像URL,VARCHAR(500),,,,,,プロフィール写真のパス
+favorite_foods,好きな食べ物,TEXT,,,,,,カンマ区切りの食品リスト
+created_at,作成日時,DATETIME,,,●,,CURRENT_TIMESTAMP,レコード作成日時
+updated_at,更新日時,DATETIME,,,●,,CURRENT_TIMESTAMP,レコード更新日時
+
+2. recommendations
+カラム名,論理名,データ型,PK,FK,Not Null,Unique,デフォルト値,説明
+id,おすすめID,INT,●,,●,,,自動採番
+user_id,ユーザーID,INT,,●,●,,,users.idを参照
+recipe_name,レシピ名,VARCHAR(255),,,●,,,料理名
+image_url,画像URL,VARCHAR(500),,,,,,レシピ画像パス
+reason,理由,VARCHAR(500),,,,,,おすすめの理由
+created_at,作成日時,DATETIME,,,●,,CURRENT_TIMESTAMP,おすすめ生成日時
+
+3. community_posts
+カラム名,論理名,データ型,PK,FK,Not Null,Unique,デフォルト値,説明
+id,投稿ID,INT,●,,●,,,自動採番
+user_id,ユーザーID,INT,,●,●,,,users.idを参照
+dish_name,料理名,VARCHAR(255),,,●,,,投稿された料理名
+dish_image,料理画像,LONGTEXT,,,●,,,Base64または画像パス
+opinion,感想,TEXT,,,,,,投稿者のメッセージ
+created_at,作成日時,DATETIME,,,●,,CURRENT_TIMESTAMP,投稿日時
+
+4. post_likes
+カラム名,論理名,データ型,PK,FK,Not Null,Unique,デフォルト値,説明
+id,いいねID,INT,●,,●,,,自動採番
+post_id,投稿ID,INT,,●,●,,,community_posts.idを参照
+user_id,ユーザーID,INT,,●,●,,,users.idを参照
+
+5. post_comments
+カラム名,論理名,データ型,PK,FK,Not Null,Unique,デフォルト値,説明
+id,コメントID,INT,●,,●,,,自動採番
+post_id,投稿ID,INT,,●,●,,,community_posts.idを参照
+user_id,ユーザーID,INT,,●,●,,,users.idを参照
+comment,コメント内容,TEXT,,,●,,,文字列
+parent_id,親コメントID,INT,,●,,,,返信用(自テーブルid参照)
+created_at,作成日時,DATETIME,,,●,,CURRENT_TIMESTAMP,コメント日時
+
+6. notifications
+カラム名,論理名,データ型,PK,FK,Not Null,Unique,デフォルト値,説明
+id,通知ID,INT,●,,●,,,自動採番
+user_id,ユーザーID,INT,,●,●,,,通知先のusers.idを参照
+type,通知タイプ,VARCHAR(50),,,●,,,"like, comment, system 等"
+title,タイトル,VARCHAR(255),,,,,,通知タイトル
+message,メッセージ,VARCHAR(500),,,,,,通知本文
+related_id,関連ID,INT,,,,,,投稿ID等の関連レコードID
+read,既読フラグ,TINYINT,,,●,,0,"0:未読, 1:既読"
+created_at,作成日時,DATETIME,,,●,,CURRENT_TIMESTAMP,通知発生日時
+

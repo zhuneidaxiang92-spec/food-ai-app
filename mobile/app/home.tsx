@@ -145,7 +145,7 @@ export default function HomeScreen({ navigation }: any) {
       const user = JSON.parse(storedUser);
       if (!user.name) return setLoading(false);
 
-      const res = await fetch(`${API_URL}/recommendations/name/${user.name}`);
+      const res = await fetch(`${API_URL}/api/recommendations/name/${user.name}`);
       const data = await res.json();
       if (data.items) setFoods(data.items);
     } catch (e) {

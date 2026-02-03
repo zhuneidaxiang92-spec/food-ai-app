@@ -35,7 +35,7 @@ export default function PreviewScreen() {
   const theme = isDark ? Colors.dark : Colors.light;
 
   const { fontSize } = useTextSize();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -106,7 +106,7 @@ export default function PreviewScreen() {
         type,
       } as any);
 
-      const res = await axios.post(`${API_URL}/predict`, formData, {
+      const res = await axios.post(`${API_URL}/predict?lang=${language}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
         timeout: 60000,
       });

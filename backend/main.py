@@ -58,35 +58,7 @@ async def translate_async(client: httpx.AsyncClient, text: str, target_lang: str
     except Exception as e:
         print(f"⚠️ DeepL Async Error: {e}")
 
-    # 2️⃣ Fallback: OpenAI
-    try:
-        openai_key = os.getenv("OPENAI_API_KEY")
-        if not openai_key:
-            return text
-
-        lang_name = "Japanese" if target_lang == "JA" else "English"
-        
-        url = "https://api.openai.com/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {openai_key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": "gpt-3.5-turbo",
-            "messages": [
-                {"role": "system", "content": f"You are a helpful translator. Translate the following text to {lang_name}. Return ONLY the translation, no extra text."},
-                {"role": "user", "content": text}
-            ],
-            "temperature": 0.3
-        }
-        res = await client.post(url, headers=headers, json=payload, timeout=20)
-        data = res.json()
-        if "choices" in data:
-            return data["choices"][0]["message"]["content"].strip()
-            
-    except Exception as e:
-        print(f"❌ OpenAI Async Error: {e}")
-
+    # 2️⃣ No Fallback: Return original if DeepL fails
     return text
 
 async def translate_batch(client: httpx.AsyncClient, texts: list[str]) -> list[str]:
@@ -123,8 +95,8 @@ app = FastAPI(title="🍣 Food AI Backend")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*", "http://localhost:8081"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -172,7 +144,7 @@ def get_food_image(food_name: str):
 # 🧠 Predict endpoint
 # ==============================================
 @app.post("/predict")
-async def predict_food(file: UploadFile = File(...)):
+async def predict_food(file: UploadFile = File(...), lang: str = "en"):
     try:
         # Resize image
         image_bytes = await file.read()
@@ -219,10 +191,12 @@ async def predict_food(file: UploadFile = File(...)):
                 return None
 
             # Execute translation and search in parallel
-            task_trans_name = translate_async(client, food_name)
+            task_trans_name = translate_async(client, food_name) if lang != "en" else asyncio.sleep(0)
             task_search = search_spoonacular()
             
-            food_name_jp, recipe_id = await asyncio.gather(task_trans_name, task_search)
+            gathered = await asyncio.gather(task_trans_name, task_search)
+            food_name_jp = gathered[0] if lang != "en" else food_name
+            recipe_id = gathered[1]
 
             if not recipe_id:
                 return {
@@ -287,8 +261,8 @@ async def predict_food(file: UploadFile = File(...)):
 # ============================================================
 # ⭐ NEW: Fetch Recipe by Name (Fix for Home → Recipe)
 # ============================================================
-@app.get("/recipe/{food_name}")
-async def get_recipe_by_name(food_name: str):
+@app.get("/api/recipe/{food_name}")
+async def get_recipe_by_name(food_name: str, lang: str = "ja"):
     try:
         async with httpx.AsyncClient() as client:
             recipe_id = None
@@ -371,7 +345,7 @@ async def get_recipe_by_name(food_name: str):
 # ============================================================
 # ⭐ Save user preferences
 # ============================================================
-@app.post("/users/{user_id}/preferences")
+@app.post("/api/users/{user_id}/preferences")
 def save_preferences(user_id: int, prefs: dict = Body(...)):
     foods = prefs.get("foods", [])
     foods_str = ",".join(foods)
@@ -397,7 +371,7 @@ def save_preferences(user_id: int, prefs: dict = Body(...)):
 # ============================================================
 # ⭐ UPDATED — Get Recommendations with Images
 # ============================================================
-@app.get("/recommendations/name/{username}")
+@app.get("/api/recommendations/name/{username}")
 def get_recommendations_by_name(username: str):
     try:
         conn = database.engine.raw_connection()

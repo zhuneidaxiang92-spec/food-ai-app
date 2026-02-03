@@ -4,7 +4,7 @@ REM 🚀 START PROJECT: BACKEND + NGROK + EXPO
 REM =========================================
 
 REM Step1️⃣ - Start FastAPI backend
-start cmd /k "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+start cmd /k "uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
 
 REM Wait for backend to boot up
 timeout /t 5 >nul
